@@ -706,7 +706,49 @@ function renderParsedItems(items) {
   });
 }
 
-function handleParseBatch() {
+/* Fill in the real file name / size for links whose page exposes it.
+   Best effort by design: try every link and let the server say whether it could
+   read anything. Google Drive yields name + size, 123pan yields the name from
+   its <title>, and Baidu / OneDrive yield nothing (password wall / login wall) —
+   in that case the field simply keeps whatever the user typed. Errors are
+   swallowed, so this can never break an import. */
+async function enrichWithMetadata(items) {
+  const targets = (items || []).filter((item) => item && item.url);
+
+  if (!targets.length) {
+    return 0;
+  }
+
+  let filled = 0;
+
+  await Promise.all(
+    targets.map(async (item) => {
+      try {
+        // The extraction code is passed along because Baidu's file list sits
+        // behind a /share/verify call; providers that don't need it ignore it.
+        const query = `url=${encodeURIComponent(item.url)}&code=${encodeURIComponent(item.pwd || '')}`;
+        const res = await fetch(`/api/metadata?${query}`, { cache: 'no-store' });
+        if (!res.ok) {
+          return;
+        }
+        const meta = await res.json();
+        if (meta && meta.name) {
+          item.name = meta.name;
+          filled += 1;
+        }
+        if (meta && meta.size && !item.size) {
+          item.size = meta.size;
+        }
+      } catch (error) {
+        /* keep whatever the parser produced */
+      }
+    })
+  );
+
+  return filled;
+}
+
+async function handleParseBatch() {
   const items = parseBatchInput(importInput.value || '');
 
   if (!items.length) {
@@ -721,6 +763,14 @@ function handleParseBatch() {
     `已识别 ${items.length} 条资源${summary ? `（${summary}）` : ''}，可继续微调。`,
     'success'
   );
+
+  // Look up real names/sizes in the background, then repaint only if something
+  // was actually found (avoids clobbering edits the user already made).
+  const enriched = await enrichWithMetadata(items);
+  if (enriched > 0) {
+    renderParsedItems(items);
+    showMessage(`已识别 ${items.length} 条资源，其中 ${enriched} 条已自动补全文件名。`, 'success');
+  }
 }
 
 async function fetchImportedItems() {

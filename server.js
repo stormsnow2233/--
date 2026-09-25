@@ -162,6 +162,33 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
+/* Share-link metadata (best effort). Reuses the same allowlisted module the
+   Cloudflare Function uses, so both back ends behave identically.
+   Dynamic import because that module is ESM and this file is CommonJS.
+   Note: outbound Google access from Node needs a proxy on some networks —
+   set HTTPS_PROXY (plus NODE_USE_ENV_PROXY=1 on Node >= 24). */
+app.get('/api/metadata', async (req, res) => {
+  const url = String(req.query.url || '');
+  const code = String(req.query.code || '');
+  if (!url) {
+    return res.status(400).json({ name: '', size: '', provider: null, reason: 'missing-url' });
+  }
+
+  try {
+    const { fetchShareMetadata } = await import('./functions/_shared/metadata.js');
+    const result = await fetchShareMetadata(url, code);
+    return res.json(result);
+  } catch (error) {
+    return res.json({
+      name: '',
+      size: '',
+      provider: null,
+      reason: 'error',
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
 app.get('/api/imported-items', (req, res) => {
   const items = readImportedItems();
   res.json({

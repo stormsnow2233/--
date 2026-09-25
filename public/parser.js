@@ -17,7 +17,7 @@ const DRIVE_DEFS = [
   { id: 'aliyun', label: '阿里云盘', needsCode: true, host: /(^|\.)(aliyundrive|alipan)\.com$/i, url: /https?:\/\/[^\s"'<>]*(?:aliyundrive\.com|alipan\.com)[^\s"'<>]*/i },
   { id: 'xunlei', label: '迅雷云盘', needsCode: true, host: /(^|\.)pan\.xunlei\.com$/i, url: /https?:\/\/[^\s"'<>]*pan\.xunlei\.com[^\s"'<>]*/i },
   { id: 'tianyi', label: '天翼云盘', needsCode: true, host: /(^|\.)(cloud\.189\.cn|189\.cn)$/i, url: /https?:\/\/[^\s"'<>]*(?:cloud\.189\.cn|189\.cn)[^\s"'<>]*/i },
-  { id: '123pan', label: '123 云盘', needsCode: true, host: /(^|\.)(123pan|123684|123865|123912|123592)\.com$/i, url: /https?:\/\/[^\s"'<>]*123(?:pan|684|865|912|592)\.com[^\s"'<>]*/i },
+  { id: '123pan', label: '123 云盘', needsCode: true, host: /(^|\.)123(?:pan|684|865|912|592)\.(?:com|cn)$/i, url: /https?:\/\/[^\s"'<>]*123(?:pan|684|865|912|592)\.(?:com|cn)[^\s"'<>]*/i },
   { id: '115', label: '115 网盘', needsCode: true, host: /(^|\.)(115\.com|115cdn\.com|anxia\.com)$/i, url: /https?:\/\/[^\s"'<>]*(?:115\.com|115cdn\.com|anxia\.com)[^\s"'<>]*/i },
   { id: 'google', label: 'Google Drive', needsCode: false, host: /(^|\.)(drive|docs)\.google\.com$/i, url: /https?:\/\/[^\s"'<>]*(?:drive|docs)\.google\.com[^\s"'<>]*/i },
   { id: 'onedrive', label: 'OneDrive', needsCode: false, host: /(^|\.)(1drv\.ms|onedrive\.live\.com|sharepoint\.com)$/i, url: /https?:\/\/[^\s"'<>]*(?:1drv\.ms|onedrive\.live\.com|sharepoint\.com)[^\s"'<>]*/i },
@@ -92,13 +92,29 @@ function extractCode(text, drive) {
 }
 
 /* Last-resort name when the paste carried no usable title (a bare cloud link
-   usually has none). Keeps the URL path tail when it is informative, otherwise
-   falls back to the drive name so the row reads "Google Drive 资源" rather than
-   a meaningless shared default. */
+   usually has none). Only accepts a path segment that actually looks like a
+   filename; opaque share ids are rejected so the row reads "Google Drive 资源"
+   instead of a meaningless token like "c2047de04f740c2e". */
 const GENERIC_PATH_SEGMENTS = new Set([
   'view', 'edit', 'preview', 'share', 'sharing', 'file', 'files', 'folder', 'folders',
-  'drive', 's', 'u', 't', 'd', 'f', 'index.html', 'home', 'open', 'download',
+  'drive', 's', 'u', 't', 'd', 'f', 'b', 'c', 'i', 'index.html', 'home', 'open', 'download',
 ]);
+
+function looksLikeFileName(segment) {
+  const name = String(segment || '').trim();
+  if (name.length < 5 || name.length > 120) {
+    return false;
+  }
+  if (GENERIC_PATH_SEGMENTS.has(name.toLowerCase())) {
+    return false;
+  }
+  // A real file name carries an extension and at least one non-hex character.
+  // This is what separates "K50-ROM-v14.zip" from a share id such as
+  // "c2047de04f740c2e" or "18xYpkkShVBwsN0O4AJ1wYOx0TlVPdUAD".
+  const hasExtension = /\.[A-Za-z0-9]{2,5}$/.test(name);
+  const looksOpaque = /^[0-9a-f]{16,}$/i.test(name);
+  return hasExtension && !looksOpaque;
+}
 
 function deriveNameFromUrl(url, drive) {
   const generic = (drive && drive.label ? `${drive.label} 资源` : '分享资源');
@@ -121,20 +137,11 @@ function deriveNameFromUrl(url, drive) {
     })
     .filter(Boolean);
 
-  // Walk from the end for the first segment that looks like a real name.
   for (let i = segments.length - 1; i >= 0; i -= 1) {
-    const segment = segments[i];
-    if (GENERIC_PATH_SEGMENTS.has(segment.toLowerCase())) {
-      continue;
+    if (looksLikeFileName(segments[i])) {
+      const name = segments[i];
+      return name.length > 80 ? name.slice(0, 80) : name;
     }
-    if (segment.length < 3) {
-      continue;
-    }
-    // Long opaque ids (Google Drive file ids and friends) are not names.
-    if (/^[A-Za-z0-9_-]{20,}$/.test(segment) && !/\.[a-z0-9]{2,5}$/i.test(segment)) {
-      continue;
-    }
-    return segment.length > 80 ? segment.slice(0, 80) : segment;
   }
 
   return generic;
