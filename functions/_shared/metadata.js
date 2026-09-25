@@ -58,12 +58,14 @@ export function formatBytes(bytes) {
   return `${rounded} ${units[i]}`;
 }
 
-/* Google Drive file id from the several shapes a share link takes:
-   /file/d/<id>/view, /open?id=<id>, ?id=<id>, /document/d/<id>/... */
+/* Google Drive file/folder id from the several shapes a share link takes:
+   /file/d/<id>/view, /drive/folders/<id>, /document/d/<id>/..., /open?id=<id>.
+   Folder ids are extracted too — lookupGoogle then detects the folder from the
+   download response and reports it, rather than bailing out earlier. */
 export function googleFileId(url) {
   try {
     const u = new URL(url);
-    const byPath = u.pathname.match(/\/d\/([A-Za-z0-9_-]{10,})/);
+    const byPath = u.pathname.match(/\/(?:d|folders)\/([A-Za-z0-9_-]{10,})/);
     if (byPath) {
       return byPath[1];
     }
@@ -213,13 +215,24 @@ async function lookupBaidu(url, code) {
       return { name: '', size: '', reason: 'empty-list' };
     }
 
+    // Baidu marks directories explicitly. A share holding a folder (or several
+    // entries) is not a single-file share, so it is reported as such instead of
+    // silently importing whichever entry happens to be first.
+    if (parsed.list.length > 1) {
+      return { name: '', size: '', reason: 'multi-entry', entries: parsed.list.length };
+    }
+
     const first = parsed.list[0];
+    if (Number(first.isdir) === 1) {
+      return { name: '', size: '', reason: 'folder' };
+    }
+
     const name = String(first.server_filename || '').trim();
     return {
       name,
       size: formatBytes(first.size),
       reason: name ? 'ok' : 'nothing-found',
-      entries: parsed.list.length,
+      entries: 1,
     };
   } catch (error) {
     return { name: '', size: '', reason: 'network' };
@@ -250,26 +263,54 @@ async function lookupGoogle(url) {
   // plus confirm=t is what returns real headers; without confirm=t Drive hands
   // back a virus-scan interstitial instead.
   let size = '';
-  try {
-    const res = await fetch(
-      `https://drive.usercontent.google.com/download?id=${id}&export=download&confirm=t`,
-      { method: 'HEAD', headers: { 'user-agent': UA } }
-    );
-    const disposition = res.headers.get('content-disposition') || '';
-    const fn = disposition.match(/filename\*?=(?:UTF-8''|")?([^";]+)/i);
-    if (fn) {
-      try {
-        name = decodeURIComponent(fn[1].replace(/"/g, '').trim()) || name;
-      } catch (error) {
-        /* keep the og:title value */
+  let downloadExplicitlyNotAFile = false;
+
+  for (let attempt = 0; attempt < 2 && !name; attempt += 1) {
+    try {
+      const res = await fetch(
+        `https://drive.usercontent.google.com/download?id=${id}&export=download&confirm=t`,
+        { method: 'HEAD', headers: { 'user-agent': UA } }
+      );
+      const disposition = res.headers.get('content-disposition') || '';
+      const looksLikeAttachment = /attachment/i.test(disposition);
+
+      /* Positive evidence that this is not a file: the endpoint answered, but
+         with a viewer/interstitial page rather than an attachment. Drive does
+         that for a folder — and only for a folder — so it is safe to report.
+         A failed request is deliberately NOT treated as a folder: Drive
+         rate-limits repeated lookups, and guessing there would reject perfectly
+         good links. */
+      if (!looksLikeAttachment) {
+        downloadExplicitlyNotAFile = true;
+        break;
       }
+
+      const fn = disposition.match(/filename\*?=(?:UTF-8''|")?([^";]+)/i);
+      if (fn) {
+        try {
+          name = decodeURIComponent(fn[1].replace(/"/g, '').trim()) || name;
+        } catch (error) {
+          /* keep the og:title value */
+        }
+      }
+      size = formatBytes(res.headers.get('content-length'));
+    } catch (error) {
+      /* inconclusive — retry once when we still have no name from og:title */
     }
-    size = formatBytes(res.headers.get('content-length'));
-  } catch (error) {
-    /* size stays empty */
   }
 
-  return { name, size, reason: name || size ? 'ok' : 'nothing-found' };
+  if (downloadExplicitlyNotAFile && !name) {
+    return { name: '', size: '', reason: 'folder' };
+  }
+
+  if (name || size) {
+    return { name, size, reason: 'ok' };
+  }
+
+  /* Nothing readable. Say so instead of guessing — an unverifiable link is kept
+     and flagged rather than rejected, so a transient Drive hiccup cannot throw
+     away a real resource. */
+  return { name: '', size: '', reason: 'unverified' };
 }
 
 /* Best-effort metadata for a share URL. Never throws.

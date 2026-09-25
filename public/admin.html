@@ -38,9 +38,10 @@
         <main class="admin-main">
           <section class="panel form-panel">
             <h2>粘贴分享文本</h2>
+            <p class="mini-hint import-constraint"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> 仅支持<b>单文件</b>分享链接。文件夹、或一次性分享多个文件的链接无法解析，会在校验后被忽略。</p>
             <label for="adminSecretInput" style="display:block;margin-bottom:8px;font-weight:600;">管理密钥</label>
             <input id="adminSecretInput" type="password" placeholder="请输入管理密钥" style="margin-bottom:12px;" />
-            <textarea id="importInput" placeholder="支持百度 / 夸克 / 阿里云盘 / 迅雷 / 天翼 / 123 / 115 / Google Drive / OneDrive / Dropbox / MEGA，也可直接粘贴直链。&#10;例如：&#10;我分享了「VSCode.zip」链接：https://pan.baidu.com/s/1abc 提取码: 1234&#10;IDEA破解补丁.7z | https://www.123pan.com/s/def | 8888 | 15MB&#10;https://drive.google.com/file/d/1abc/view&#10;https://1drv.ms/u/s!AbCdEf"></textarea>
+            <textarea id="importInput" placeholder="每行一个分享链接（仅单文件）。支持百度 / 夸克 / 阿里云盘 / 迅雷 / 天翼 / 123 / 115 / Google Drive / OneDrive / Dropbox / MEGA。&#10;例如：&#10;链接: https://pan.baidu.com/s/1abc 提取码: a54m&#10;https://drive.google.com/file/d/1abc/view&#10;https://1drv.ms/u/s!AbCdEf"></textarea>
 
             <div class="batch-actions">
               <button id="parseBtn" class="secondary" type="button">解析预览</button>

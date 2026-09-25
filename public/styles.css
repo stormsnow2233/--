@@ -1356,6 +1356,25 @@ body {
   font-size: 12px;
 }
 
+/* States the single-file-only rule up front, before anything is pasted. */
+.import-constraint {
+  padding: 8px 10px;
+  border: 1px solid rgba(42, 109, 246, 0.2);
+  border-radius: 10px;
+  background: rgba(42, 109, 246, 0.06);
+  color: #3d4a5f;
+  line-height: 1.6;
+}
+
+.import-constraint i {
+  margin-right: 4px;
+  color: var(--primary);
+}
+
+.import-constraint b {
+  color: var(--primary-dark, #1c4fd0);
+}
+
 .thank-you-panel textarea {
   width: 100%;
   min-height: 140px;

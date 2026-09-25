@@ -706,20 +706,37 @@ function renderParsedItems(items) {
   });
 }
 
-/* Fill in the real file name / size for links whose page exposes it.
-   Best effort by design: try every link and let the server say whether it could
-   read anything. Google Drive yields name + size, 123pan yields the name from
-   its <title>, and Baidu / OneDrive yield nothing (password wall / login wall) —
-   in that case the field simply keeps whatever the user typed. Errors are
-   swallowed, so this can never break an import. */
+/* Reasons that mean "this share is not a single file", so it must not be
+   imported. Anything else (network hiccup, unsupported host, private link) is
+   treated as "could not verify" and the row is kept with whatever name the
+   parser produced. */
+const NOT_SINGLE_FILE_REASONS = new Set(['folder', 'multi-entry']);
+
+/* Why a link was dropped, in words the operator can act on. */
+const REJECTION_TEXT = {
+  folder: '是一个文件夹',
+  'multi-entry': '包含多个文件',
+  'bad-code': '提取码不正确',
+  'needs-code': '缺少提取码（该分享需要提取码才能校验）',
+};
+
+/* Fill in the real file name / size for links whose page exposes it, and decide
+   whether each link is actually a single-file share.
+
+   Returns { filled, rejected: [{ item, reason }] }. Rejects only on evidence —
+   a definitive "this is a folder / holds several entries" from the provider, or
+   a bad/missing extraction code that makes the check impossible. A provider that
+   cannot be read at all (OneDrive's login wall, an unsupported host) is left
+   alone rather than guessing. */
 async function enrichWithMetadata(items) {
   const targets = (items || []).filter((item) => item && item.url);
 
   if (!targets.length) {
-    return 0;
+    return { filled: 0, rejected: [] };
   }
 
   let filled = 0;
+  const rejected = [];
 
   await Promise.all(
     targets.map(async (item) => {
@@ -732,11 +749,28 @@ async function enrichWithMetadata(items) {
           return;
         }
         const meta = await res.json();
-        if (meta && meta.name) {
+        if (!meta) {
+          return;
+        }
+
+        if (NOT_SINGLE_FILE_REASONS.has(meta.reason)) {
+          rejected.push({ item, reason: meta.reason });
+          return;
+        }
+
+        // A wrong or absent code only matters for providers that gate the file
+        // list behind it — without the code the link cannot be verified, so it
+        // is refused rather than imported on trust.
+        if (meta.reason === 'bad-code' || meta.reason === 'needs-code') {
+          rejected.push({ item, reason: meta.reason });
+          return;
+        }
+
+        if (meta.name) {
           item.name = meta.name;
           filled += 1;
         }
-        if (meta && meta.size && !item.size) {
+        if (meta.size && !item.size) {
           item.size = meta.size;
         }
       } catch (error) {
@@ -745,7 +779,7 @@ async function enrichWithMetadata(items) {
     })
   );
 
-  return filled;
+  return { filled, rejected };
 }
 
 async function handleParseBatch() {
@@ -760,16 +794,35 @@ async function handleParseBatch() {
   renderParsedItems(items);
   const summary = typeof summarizeDrives === 'function' ? summarizeDrives(items) : '';
   showMessage(
-    `已识别 ${items.length} 条资源${summary ? `（${summary}）` : ''}，可继续微调。`,
+    `已识别 ${items.length} 条资源${summary ? `（${summary}）` : ''}，正在校验是否为单文件分享…`,
     'success'
   );
 
-  // Look up real names/sizes in the background, then repaint only if something
-  // was actually found (avoids clobbering edits the user already made).
-  const enriched = await enrichWithMetadata(items);
-  if (enriched > 0) {
+  const { filled, rejected } = await enrichWithMetadata(items);
+
+  // Drop everything that turned out not to be a single file.
+  const kept = items.filter((item) => !rejected.some((r) => r.item === item));
+
+  if (rejected.length) {
+    renderParsedItems(kept);
+
+    const detail = rejected
+      .map((r) => `「${r.item.name || r.item.url}」${REJECTION_TEXT[r.reason] || r.reason}`)
+      .join('；');
+
+    const tail = kept.length
+      ? `；其余 ${kept.length} 条已保留${filled ? `（${filled} 条已自动补全文件名）` : ''}。`
+      : '。';
+
+    showMessage(`已忽略 ${rejected.length} 条非单文件分享：${detail}${tail}`, 'error');
+    return;
+  }
+
+  if (filled > 0) {
     renderParsedItems(items);
-    showMessage(`已识别 ${items.length} 条资源，其中 ${enriched} 条已自动补全文件名。`, 'success');
+    showMessage(`已识别 ${items.length} 条资源，其中 ${filled} 条已自动补全文件名。`, 'success');
+  } else {
+    showMessage(`已识别 ${items.length} 条资源${summary ? `（${summary}）` : ''}，可继续微调。`, 'success');
   }
 }
 
