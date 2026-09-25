@@ -206,12 +206,25 @@ button {
   text-align: center;
   padding: 6px 4px;
   border-radius: 12px;
-  transition: transform 0.2s ease, background 0.2s ease;
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  animation: desktopItemIn 0.25s ease;
 }
 
 .desktop-item:hover {
   background: rgba(255,255,255,0.08);
-  transform: translateY(-2px);
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 12px 30px rgba(17, 35, 59, 0.12);
+}
+
+@keyframes desktopItemIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .file-type-icon {
@@ -359,12 +372,26 @@ button {
   color: var(--text);
   text-align: left;
   width: 100%;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.folder-tree-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(46,110,247,0.12);
 }
 
 .folder-tree-item.active {
   background: var(--primary);
   color: white;
   border-color: var(--primary);
+  box-shadow: 0 10px 20px rgba(46,110,247,0.18);
+  animation: pulsePrimary 0.4s ease;
+}
+
+@keyframes pulsePrimary {
+  0% { transform: scale(0.98); }
+  50% { transform: scale(1.01); }
+  100% { transform: scale(1); }
 }
 
 .admin-main {
@@ -561,7 +588,12 @@ button {
   border: 1px solid #dfeaff;
   color: #1d4fb7;
   text-decoration: none;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.thank-you-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(46,110,247,0.08);
 }
 
 .thank-you-item:hover {
@@ -604,12 +636,72 @@ input[data-field] {
   min-width: 120px;
 }
 
-.move-select {
-  margin-left: 6px;
-  margin-right: 6px;
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.move-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
   border: 1px solid #dfe7f5;
-  border-radius: 8px;
-  padding: 6px 8px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f9fbff 0%, #eef5ff 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+  animation: slideIn 0.22s ease;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.move-label {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.move-select {
+  min-width: 160px;
+  border: 1px solid #d0dcf9;
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--text);
+  padding: 7px 32px 7px 10px;
+  font-size: 12px;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, #5d7fe9 50%), linear-gradient(135deg, #5d7fe9 50%, transparent 50%);
+  background-position: calc(100% - 16px) calc(50% - 2px), calc(100% - 11px) calc(50% - 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  box-shadow: 0 2px 8px rgba(93, 127, 233, 0.08);
+}
+
+.move-select:focus {
+  outline: none;
+  border-color: #7b9cff;
+  box-shadow: 0 0 0 3px rgba(93,127,233,0.12);
+}
+
+.move-confirm {
+  min-width: 64px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.move-confirm:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(46,110,247,0.14);
+}
+
+.move-confirm:active {
+  transform: translateY(0);
 }
 
 .tiny-link {

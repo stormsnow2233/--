@@ -175,13 +175,18 @@ function renderFolderItems() {
           <td>${typeLabel}</td>
           <td>${escapeHtml(detailText)}</td>
           <td>
-            ${item.is_dir ? `<button type="button" class="secondary small" data-enter-id="${item.id}">进入</button>` : `<a href="${escapeHtml(item.url || '#')}" target="_blank" rel="noopener noreferrer" class="tiny-link">打开</a>`}
-            <button type="button" class="danger small" data-delete-id="${item.id}">删除</button>
-            <select class="move-select" data-move-id="${item.id}">
-              <option value="0">移动到：根目录</option>
-              ${buildFolderOptions(item.id)}
-            </select>
-            <button type="button" class="secondary small" data-move-id="${item.id}">确认移动</button>
+            <div class="row-actions">
+              ${item.is_dir ? `<button type="button" class="secondary small" data-enter-id="${item.id}">进入</button>` : `<a href="${escapeHtml(item.url || '#')}" target="_blank" rel="noopener noreferrer" class="tiny-link">打开</a>`}
+              <button type="button" class="danger small" data-delete-id="${item.id}">删除</button>
+            </div>
+            <div class="move-control">
+              <label class="move-label">移动到</label>
+              <select class="move-select" data-move-id="${item.id}">
+                <option value="0">根目录</option>
+                ${buildFolderOptions(item.id)}
+              </select>
+              <button type="button" class="secondary small move-confirm" data-move-id="${item.id}">确认</button>
+            </div>
           </td>
         </tr>
       `;
@@ -256,7 +261,7 @@ function buildFolderOptions(excludeId) {
 
 async function refreshAllData() {
   try {
-    const response = await fetch('/api/imported-items');
+    const response = await fetch('/api/imported-items', { cache: 'no-store' });
     const data = await response.json();
     allItems = data.items || [];
     renderFolderBreadcrumb();
@@ -348,7 +353,7 @@ function handleParseBatch() {
 
 async function fetchImportedItems() {
   try {
-    const response = await fetch('/api/imported-items');
+    const response = await fetch('/api/imported-items', { cache: 'no-store' });
     const data = await response.json();
     allItems = data.items || [];
     renderFolderTree(allItems);

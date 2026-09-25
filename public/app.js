@@ -151,7 +151,7 @@ function renderDesktopItems(items) {
 
 async function fetchImportedItems() {
   try {
-    const response = await fetch('/api/imported-items');
+    const response = await fetch('/api/imported-items', { cache: 'no-store' });
     const data = await response.json();
 
     if (!response.ok) {
