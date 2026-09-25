@@ -57,10 +57,17 @@ function getCurrentFolderPath() {
 
 function renderBreadcrumb() {
   const path = getCurrentFolderPath();
-  const baseName = path.length ? path[path.length - 1].name : '首页';
-  const breadcrumbText = path.length ? `当前: ${path.map((item) => item.name).join(' / ')}` : '首页';
 
-  folderBreadcrumb.textContent = breadcrumbText || baseName;
+  if (!folderBreadcrumb) {
+    return;
+  }
+
+  const segments = [
+    '<button type="button" class="breadcrumb-item breadcrumb-home" data-breadcrumb-folder="0"><i class="fa-solid fa-house"></i><span>首页</span></button>',
+    ...path.map((item) => `<button type="button" class="breadcrumb-item" data-breadcrumb-folder="${escapeHtml(item.id)}"><span>${escapeHtml(item.name)}</span></button>`),
+  ];
+
+  folderBreadcrumb.innerHTML = segments.join('<span class="breadcrumb-separator" aria-hidden="true">/</span>');
 }
 
 function getVisibleItems() {
@@ -205,6 +212,19 @@ async function fetchImportedItems() {
 if (resourceSearch) {
   resourceSearch.addEventListener('input', (event) => {
     renderDesktopItems(getFilteredItems(event.target.value));
+  });
+}
+
+if (folderBreadcrumb) {
+  folderBreadcrumb.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-breadcrumb-folder]');
+    if (!button) {
+      return;
+    }
+
+    currentFolderId = button.dataset.breadcrumbFolder || 0;
+    renderBreadcrumb();
+    renderDesktopItems(getFilteredItems(resourceSearch ? resourceSearch.value : ''));
   });
 }
 

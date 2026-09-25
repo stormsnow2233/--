@@ -590,6 +590,36 @@ body {
   margin-right: 2px;
 }
 
+.breadcrumb-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #252a33;
+  font-size: inherit;
+  font-weight: inherit;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.breadcrumb-item:hover {
+  background: rgba(22, 141, 242, 0.1);
+  color: #168df2;
+}
+
+.breadcrumb-home i {
+  color: #1a1f29;
+}
+
+.breadcrumb-separator {
+  display: inline-block;
+  margin: 0 7px;
+  color: #8b95a3;
+  user-select: none;
+}
+
 .toolbar-actions {
   display: flex;
   gap: 4px;
