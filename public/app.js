@@ -273,9 +273,9 @@ function renderThankYouList() {
   thankYouList.innerHTML = links
     .map(
       (item) => `
-        <a class="thank-you-item" href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">
+        <div class="thank-you-item">
           ${escapeHtml(item.label)}
-        </a>
+        </div>
       `
     )
     .join('');
