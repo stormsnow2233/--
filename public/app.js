@@ -9,8 +9,19 @@ const thankYouList = document.getElementById('thankYouList');
 const closeThankYouModalBtn = document.getElementById('closeThankYouModal');
 const viewButtons = document.querySelectorAll('.view-button');
 const listPanel = document.querySelector('.list-panel');
+const announcementModal = document.getElementById('announcementModal');
+const closeAnnouncementButton = document.getElementById('closeAnnouncement');
+const announcementContent = document.getElementById('announcementContent');
 
 const THANKS_KEY = 'thank_you_links';
+const ANNOUNCEMENT_KEY = 'announcement_markdown';
+const ANNOUNCEMENT_MARKDOWN = `欢迎来到 **网盘资源库**。
+
+- 资源会持续整理和更新
+- 点击文件即可打开对应链接
+- 如果页面没有加载内容，请稍后刷新重试
+
+[查看使用说明](https://example.com)`;
 
 let allItems = [];
 let currentFolderId = 0;
@@ -269,6 +280,60 @@ function closeThankYouModal() {
   thankYouModal.setAttribute('aria-hidden', 'true');
 }
 
+function renderAnnouncementMarkdown(markdown) {
+  if (!announcementContent) {
+    return;
+  }
+
+  const inlineMarkdown = (value) => value
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  const lines = escapeHtml(markdown).split('\n');
+  const html = [];
+  let listOpen = false;
+
+  const closeList = () => {
+    if (listOpen) {
+      html.push('</ul>');
+      listOpen = false;
+    }
+  };
+
+  lines.forEach((line) => {
+    if (/^[-*]\s+/.test(line)) {
+      if (!listOpen) {
+        html.push('<ul>');
+        listOpen = true;
+      }
+      html.push(`<li>${inlineMarkdown(line.replace(/^[-*]\s+/, ''))}</li>`);
+      return;
+    }
+
+    closeList();
+    if (!line.trim()) {
+      return;
+    }
+    if (/^###\s+/.test(line)) {
+      html.push(`<h4>${inlineMarkdown(line.replace(/^###\s+/, ''))}</h4>`);
+    } else if (/^##\s+/.test(line)) {
+      html.push(`<h3>${inlineMarkdown(line.replace(/^##\s+/, ''))}</h3>`);
+    } else if (/^#\s+/.test(line)) {
+      html.push(`<h2>${inlineMarkdown(line.replace(/^#\s+/, ''))}</h2>`);
+    } else {
+      html.push(`<p>${inlineMarkdown(line)}</p>`);
+    }
+  });
+
+  closeList();
+  announcementContent.innerHTML = html.join('');
+}
+
+function getAnnouncementMarkdown() {
+  return localStorage.getItem(ANNOUNCEMENT_KEY) || ANNOUNCEMENT_MARKDOWN;
+}
+
 if (thankYouButton) {
   thankYouButton.addEventListener('click', openThankYouModal);
 }
@@ -285,6 +350,37 @@ if (thankYouModal) {
   });
 }
 
+function setAnnouncementVisible(visible) {
+  if (!announcementModal) {
+    return;
+  }
+
+  announcementModal.classList.toggle('hidden', !visible);
+  announcementModal.setAttribute('aria-hidden', String(!visible));
+  if (visible && closeAnnouncementButton) {
+    closeAnnouncementButton.focus();
+  }
+}
+
+if (closeAnnouncementButton) {
+  closeAnnouncementButton.addEventListener('click', () => setAnnouncementVisible(false));
+}
+
+if (announcementModal) {
+  announcementModal.addEventListener('click', (event) => {
+    if (event.target === announcementModal) {
+      setAnnouncementVisible(false);
+    }
+  });
+}
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    setAnnouncementVisible(false);
+    closeThankYouModal();
+  }
+});
+
 viewButtons.forEach((button) => {
   button.addEventListener('click', () => {
     const view = button.dataset.view || 'list';
@@ -300,3 +396,5 @@ if (refreshBtn) {
 }
 
 fetchImportedItems();
+renderAnnouncementMarkdown(getAnnouncementMarkdown());
+setAnnouncementVisible(true);

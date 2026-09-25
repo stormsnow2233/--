@@ -17,10 +17,21 @@ const createFolderCancel = document.getElementById('createFolderCancel');
 const backFolderBtn = document.getElementById('backFolderBtn');
 const thankYouEditor = document.getElementById('thankYouEditor');
 const saveThankYouBtn = document.getElementById('saveThankYouBtn');
+const announcementEditor = document.getElementById('announcementEditor');
+const saveAnnouncementBtn = document.getElementById('saveAnnouncementBtn');
 
 let parsedItems = [];
 let allItems = [];
 let currentFolderId = 0;
+const expandedFolders = new Set();
+const ANNOUNCEMENT_KEY = 'announcement_markdown';
+const DEFAULT_ANNOUNCEMENT = `欢迎来到 **网盘资源库**。
+
+- 资源会持续整理和更新
+- 点击文件即可打开对应链接
+- 如果页面没有加载内容，请稍后刷新重试
+
+[查看使用说明](https://example.com)`;
 
 function getAdminSecret() {
   const defaultSecret = 'admin123';
@@ -89,6 +100,27 @@ function saveThankYouSettings() {
   showMessage(links.length ? '感谢名单已保存' : '感谢名单已清空', links.length ? 'success' : 'error');
 }
 
+function loadAnnouncementEditor() {
+  if (announcementEditor) {
+    announcementEditor.value = localStorage.getItem(ANNOUNCEMENT_KEY) || DEFAULT_ANNOUNCEMENT;
+  }
+}
+
+function saveAnnouncementSettings() {
+  if (!announcementEditor) {
+    return;
+  }
+
+  const markdown = announcementEditor.value.trim();
+  if (!markdown) {
+    showMessage('公告内容不能为空', 'error');
+    return;
+  }
+
+  localStorage.setItem(ANNOUNCEMENT_KEY, markdown);
+  showMessage('主页公告已保存', 'success');
+}
+
 function escapeHtml(value) {
   return String(value || '')
     .replace(/&/g, '&amp;')
@@ -133,28 +165,65 @@ function getVisibleItems() {
   return allItems.filter((item) => String(item.parent_id || 0) === String(currentFolderId));
 }
 
-function renderFolderTree(items, parentId = 0, depth = 0) {
-  const children = items.filter((item) => String(item.parent_id || 0) === String(parentId) && item.is_dir);
-  const html = children.length
-    ? children
-        .map((item) => {
-          const nested = renderFolderTree(items, item.id, depth + 1);
-          const activeClass = String(item.id) === String(currentFolderId) ? 'active' : '';
-          return `
-            <div class="tree-node" style="margin-left:${depth * 14}px">
-              <button type="button" class="folder-tree-item ${activeClass}" data-folder-id="${item.id}">${escapeHtml(item.name)}</button>
-              ${nested}
-            </div>
-          `;
-        })
-        .join('')
-    : '<div class="tree-empty">空目录</div>';
+function isFolderInCurrentPath(folderId) {
+  let cursor = currentFolderId;
 
-  if (folderTree) {
-    folderTree.innerHTML = html;
+  while (cursor) {
+    if (String(cursor) === String(folderId)) {
+      return true;
+    }
+
+    const folder = getFolderById(cursor);
+    cursor = folder ? folder.parent_id || 0 : 0;
   }
 
-  return html;
+  return false;
+}
+
+function buildFolderTreeHtml(items, parentId = 0) {
+  const children = items.filter((item) => String(item.parent_id || 0) === String(parentId) && item.is_dir);
+
+  return children
+    .map((item) => {
+      const nestedItems = items.filter((child) => String(child.parent_id || 0) === String(item.id) && child.is_dir);
+      const hasChildren = nestedItems.length > 0;
+      const expanded = expandedFolders.has(String(item.id)) || isFolderInCurrentPath(item.id);
+      const activeClass = String(item.id) === String(currentFolderId) ? 'active' : '';
+
+      return `
+        <div class="tree-node ${expanded ? 'expanded' : ''}">
+          <div class="tree-row">
+            <button type="button" class="tree-toggle ${hasChildren ? '' : 'is-empty'}" data-toggle-folder="${item.id}" aria-expanded="${expanded}" aria-label="展开或收起 ${escapeHtml(item.name)}">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+            <button type="button" class="folder-tree-item ${activeClass}" data-folder-id="${item.id}">
+              <i class="fa-solid fa-folder"></i>
+              <span>${escapeHtml(item.name)}</span>
+            </button>
+          </div>
+          <div class="tree-children">${buildFolderTreeHtml(items, item.id)}</div>
+        </div>
+      `;
+    })
+    .join('');
+}
+
+function renderFolderTree(items) {
+  if (!folderTree) {
+    return;
+  }
+
+  const rootActive = currentFolderId === 0 ? 'active' : '';
+  const nested = buildFolderTreeHtml(items);
+  folderTree.innerHTML = `
+    <div class="tree-root">
+      <button type="button" class="folder-tree-item ${rootActive}" data-folder-id="0">
+        <i class="fa-solid fa-house"></i>
+        <span>根目录</span>
+      </button>
+    </div>
+    ${nested || '<div class="tree-empty">暂无子目录</div>'}
+  `;
 }
 
 function renderFolderItems() {
@@ -517,11 +586,28 @@ if (backFolderBtn) {
 
 if (folderTree) {
   folderTree.addEventListener('click', (event) => {
+    const toggle = event.target.closest('[data-toggle-folder]');
+    if (toggle && !toggle.classList.contains('is-empty')) {
+      const folderId = String(toggle.dataset.toggleFolder);
+      const node = toggle.closest('.tree-node');
+      const expanded = node ? node.classList.toggle('expanded') : false;
+      toggle.setAttribute('aria-expanded', String(expanded));
+      if (expanded) {
+        expandedFolders.add(folderId);
+      } else {
+        expandedFolders.delete(folderId);
+      }
+      return;
+    }
+
     const button = event.target.closest('[data-folder-id]');
     if (!button) {
       return;
     }
     currentFolderId = button.dataset.folderId;
+    if (currentFolderId !== '0') {
+      expandedFolders.add(String(currentFolderId));
+    }
     renderFolderBreadcrumb();
     renderFolderTree(allItems);
     renderFolderItems();
@@ -532,6 +618,11 @@ if (saveThankYouBtn) {
   saveThankYouBtn.addEventListener('click', saveThankYouSettings);
 }
 
+if (saveAnnouncementBtn) {
+  saveAnnouncementBtn.addEventListener('click', saveAnnouncementSettings);
+}
+
 getAdminSecret();
 loadThankYouEditor();
+loadAnnouncementEditor();
 fetchImportedItems();

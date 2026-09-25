@@ -7,6 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>后台导入</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
@@ -30,7 +31,8 @@
             <button id="backFolderBtn" type="button" class="secondary small">返回上级</button>
             <div id="folderBreadcrumb" class="folder-breadcrumb">根目录</div>
           </div>
-          <div id="folderTree" class="folder-tree"></div>
+          <div class="tree-caption">目录结构</div>
+          <div id="folderTree" class="folder-tree" aria-label="目录结构"></div>
         </aside>
 
         <main class="admin-main">
@@ -90,6 +92,15 @@
             <textarea id="thankYouEditor" placeholder="例如：&#10;某某博客 | https://example.com&#10;某某资源站 | https://example.com"></textarea>
             <div class="batch-actions">
               <button id="saveThankYouBtn" class="primary" type="button">保存名单</button>
+            </div>
+          </section>
+
+          <section class="panel announcement-editor-panel">
+            <h2>主页公告</h2>
+            <p class="mini-hint">支持 Markdown，保存后主页打开时会自动显示。</p>
+            <textarea id="announcementEditor" placeholder="输入主页公告内容"></textarea>
+            <div class="batch-actions">
+              <button id="saveAnnouncementBtn" class="primary" type="button">保存公告</button>
             </div>
           </section>
         </main>
