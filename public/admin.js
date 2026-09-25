@@ -79,7 +79,12 @@ function loadThankYouEditor() {
     const raw = localStorage.getItem('thank_you_links');
     const links = raw ? JSON.parse(raw) : [];
     thankYouEditor.value = Array.isArray(links)
-      ? links.map((item) => item.label || '').filter(Boolean).join('\n')
+      ? links.map((item) => {
+        if (!item || !item.label) {
+          return '';
+        }
+        return item.url ? `${item.label} | ${item.url}` : item.label;
+      }).filter(Boolean).join('\n')
       : '';
   } catch (error) {
     thankYouEditor.value = '';

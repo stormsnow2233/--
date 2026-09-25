@@ -271,13 +271,21 @@ function renderThankYouList() {
   }
 
   thankYouList.innerHTML = links
-    .map(
-      (item) => `
+    .map((item) => {
+      if (item.url) {
+        return `
+          <a class="thank-you-item" href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">
+            ${escapeHtml(item.label)}
+          </a>
+        `;
+      }
+
+      return `
         <div class="thank-you-item">
           ${escapeHtml(item.label)}
         </div>
-      `
-    )
+      `;
+    })
     .join('');
 }
 
