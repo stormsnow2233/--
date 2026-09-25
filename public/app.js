@@ -7,6 +7,8 @@ const thankYouButton = document.getElementById('openThankYouList');
 const thankYouModal = document.getElementById('thankYouModal');
 const thankYouList = document.getElementById('thankYouList');
 const closeThankYouModalBtn = document.getElementById('closeThankYouModal');
+const viewButtons = document.querySelectorAll('.view-button');
+const listPanel = document.querySelector('.list-panel');
 
 const THANKS_KEY = 'thank_you_links';
 
@@ -44,8 +46,8 @@ function getCurrentFolderPath() {
 
 function renderBreadcrumb() {
   const path = getCurrentFolderPath();
-  const baseName = path.length ? path[path.length - 1].name : '根目录';
-  const breadcrumbText = path.length ? `当前: ${path.map((item) => item.name).join(' / ')}` : '根目录';
+  const baseName = path.length ? path[path.length - 1].name : '首页';
+  const breadcrumbText = path.length ? `当前: ${path.map((item) => item.name).join(' / ')}` : '首页';
 
   folderBreadcrumb.textContent = breadcrumbText || baseName;
 }
@@ -109,6 +111,19 @@ function getItemIconHtml(item) {
   return '<i class="fa-regular fa-file-lines"></i>';
 }
 
+function formatItemDate(value) {
+  if (!value) {
+    return '-';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '-';
+  }
+
+  return date.toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-');
+}
+
 function renderDesktopItems(items) {
   if (!items || items.length === 0) {
     desktopGrid.innerHTML = '<div class="empty-state">当前目录为空</div>';
@@ -116,14 +131,22 @@ function renderDesktopItems(items) {
   }
 
   desktopGrid.innerHTML = items
-    .map(
-      (item) => `
+    .map((item) => {
+      const sizeText = item.size ? String(item.size) : item.is_dir ? '目录' : '未知大小';
+
+      return `
         <div class="desktop-item ${item.is_dir ? 'is-folder' : 'is-file'}" data-item-id="${escapeHtml(item.id)}" title="${escapeHtml(item.name || '未命名文件')}">
-          <div class="file-type-icon ${getItemIconClass(item)}" aria-hidden="true">${getItemIconHtml(item)}</div>
-          <div class="desktop-name">${escapeHtml(item.name || '未命名文件')}</div>
+          <div class="item-main">
+            <div class="file-type-icon ${getItemIconClass(item)}" aria-hidden="true">${getItemIconHtml(item)}</div>
+            <div class="desktop-name-wrap">
+              <div class="desktop-name">${escapeHtml(item.name || '未命名文件')}</div>
+            </div>
+          </div>
+          <div class="list-size">${escapeHtml(sizeText)}</div>
+          <div class="list-date">${escapeHtml(formatItemDate(item.createdAt))}</div>
         </div>
-      `
-    )
+      `;
+    })
     .join('');
 
   desktopGrid.querySelectorAll('.desktop-item').forEach((node) => {
@@ -261,6 +284,16 @@ if (thankYouModal) {
     }
   });
 }
+
+viewButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    const view = button.dataset.view || 'list';
+    viewButtons.forEach((item) => item.classList.toggle('active', item === button));
+    if (listPanel) {
+      listPanel.classList.toggle('grid-mode', view === 'grid');
+    }
+  });
+});
 
 if (refreshBtn) {
   refreshBtn.addEventListener('click', fetchImportedItems);

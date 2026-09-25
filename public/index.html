@@ -11,39 +11,41 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <div class="desktop-shell">
-      <header class="desktop-topbar">
+    <main class="openlist-shell">
+      <header class="site-header">
         <div class="brand-wrap">
-          <div class="brand-mark">VPS</div>
-          <div class="brand-text">K50电竞版ROM基地</div>
+          <div class="brand-mark">V</div>
         </div>
-
-        <div class="status-pill">本地服务器已连接</div>
-
-        <div class="topbar-actions">
-          <button id="backFolderBtn" class="top-action ghost" type="button">返回上级</button>
-          <button id="refreshBtn" class="top-action" type="button">刷新</button>
+        <div class="view-switcher" aria-label="视图切换">
+          <button class="view-button active" data-view="list" type="button" title="列表视图"><i class="fa-solid fa-list"></i></button>
+          <button class="view-button" data-view="grid" type="button" title="网格视图"><i class="fa-solid fa-grip"></i></button>
         </div>
       </header>
 
-      <main class="desktop-window">
-        <div class="window-tools">
-          <div class="search-panel">
-            <span class="search-icon">⌕</span>
-            <input
-              id="resourceSearch"
-              class="resource-search"
-              type="text"
-              placeholder="搜索资源、文件名或链接"
-              aria-label="搜索资源"
-            />
+      <div class="content-panel">
+        <div class="page-toolbar">
+          <div id="folderBreadcrumb" class="window-badge"><i class="fa-solid fa-house"></i> 首页</div>
+          <div class="toolbar-actions">
+            <button id="backFolderBtn" class="icon-action" type="button" title="返回上级"><i class="fa-solid fa-arrow-left"></i></button>
+            <button id="refreshBtn" class="icon-action" type="button" title="刷新"><i class="fa-solid fa-rotate-right"></i></button>
           </div>
-          <div id="folderBreadcrumb" class="window-badge">根目录</div>
         </div>
 
-        <div id="desktopGrid" class="desktop-grid" aria-live="polite"></div>
-      </main>
-    </div>
+        <div class="search-panel">
+          <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
+          <input id="resourceSearch" class="resource-search" type="text" placeholder="搜索资源" aria-label="搜索资源" />
+        </div>
+
+        <section class="list-panel">
+          <div class="list-header">
+            <div class="col-name">名称</div>
+            <div class="col-size">大小</div>
+            <div class="col-date">修改时间</div>
+          </div>
+          <div id="desktopGrid" class="desktop-grid" aria-live="polite"></div>
+        </section>
+      </div>
+    </main>
 
     <div class="thank-you-footer">
       <button id="openThankYouList" class="thank-you-link" type="button">感谢名单</button>
