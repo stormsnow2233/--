@@ -2666,6 +2666,27 @@ body:has(.openlist-shell) .empty-action:active {
   transition-duration: var(--mo-instant);
 }
 
+/* ---------- list <-> grid switch ---------- */
+/* Each row keeps a stable identity across the swap so the browser can morph a
+   row into its card (View Transitions API). `view-transition-name` has to be a
+   <custom-ident> usable in a var(), which is why the value is passed in from JS
+   rather than derived from the item id here. */
+body:has(.openlist-shell) .desktop-item {
+  view-transition-name: var(--vt-name);
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.32s;
+  animation-timing-function: var(--mo-ease-standard, cubic-bezier(0.2, 0, 0, 1));
+}
+
+/* Short cross-fade used when the API is missing. */
+body:has(.openlist-shell) .list-panel.view-switching {
+  opacity: 0;
+  transition: opacity 0.13s ease;
+}
+
 /* ---------- file rows ---------- */
 body:has(.openlist-shell) .desktop-item {
   animation: none;

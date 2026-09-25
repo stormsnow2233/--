@@ -82,7 +82,7 @@ export async function onRequestPatch({ request, env }) {
 
     const nextName = String(name || '').trim();
     if (!nextName) {
-      return jsonResponse({ success: false, message: '文件夹名称不能为空' }, 400);
+      return jsonResponse({ success: false, message: '名称不能为空' }, 400);
     }
 
     const itemId = getItemIdFromUrl(request.url);
@@ -98,12 +98,13 @@ export async function onRequestPatch({ request, env }) {
       return jsonResponse({ success: false, message: '数据不存在' }, 404);
     }
 
-    if (!target.is_dir) {
-      return jsonResponse({ success: false, message: '只能重命名文件夹' }, 400);
-    }
-
+    // Both files and folders can be renamed; nothing here is folder-specific.
     await env.DB.prepare('UPDATE imported_items SET name = ? WHERE id = ?').bind(nextName, itemId).run();
-    return jsonResponse({ success: true, message: '文件夹重命名成功', name: nextName });
+    return jsonResponse({
+      success: true,
+      message: `${target.is_dir ? '文件夹' : '文件'}重命名成功`,
+      name: nextName,
+    });
   } catch (error) {
     return jsonResponse(
       {

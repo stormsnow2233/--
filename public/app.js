@@ -393,7 +393,7 @@ function renderDesktopItems(items) {
       const animationIndex = Math.min(index, MOTION_STAGGER_CAP);
 
       return `
-        <div class="desktop-item ${item.is_dir ? 'is-folder' : 'is-file'}" data-item-id="${escapeHtml(item.id)}" style="--item-index: ${animationIndex};" title="${escapeHtml(item.name || '未命名文件')}">
+        <div class="desktop-item ${item.is_dir ? 'is-folder' : 'is-file'}" data-item-id="${escapeHtml(item.id)}" style="--item-index: ${animationIndex}; --vt-name: vti-${escapeHtml(String(item.id))};" title="${escapeHtml(item.name || '未命名文件')}">
           <div class="item-main">
             <div class="file-type-icon ${getItemIconClass(item)}" aria-hidden="true">${getItemIconHtml(item)}</div>
             <div class="desktop-name-wrap">
@@ -729,10 +729,35 @@ document.addEventListener('keydown', (event) => {
 viewButtons.forEach((button) => {
   button.addEventListener('click', () => {
     const view = button.dataset.view || 'list';
-    viewButtons.forEach((item) => item.classList.toggle('active', item === button));
-    if (listPanel) {
-      listPanel.classList.toggle('grid-mode', view === 'grid');
+    const toGrid = view === 'grid';
+
+    const apply = () => {
+      viewButtons.forEach((item) => item.classList.toggle('active', item === button));
+      if (listPanel) {
+        listPanel.classList.toggle('grid-mode', toGrid);
+      }
+    };
+
+    // List <-> grid cannot tween on its own: the rows and the cards differ by
+    // `display`, which is not animatable, so the swap is a hard snap. The View
+    // Transitions API lets the browser capture both layouts and interpolate
+    // between them, which turns that snap into a smooth morph.
+    if (typeof document.startViewTransition === 'function' && !prefersReducedMotion()) {
+      document.startViewTransition(apply);
+      return;
     }
+
+    // Fallback: a short cross-fade, then swap mid-fade.
+    if (!listPanel || prefersReducedMotion()) {
+      apply();
+      return;
+    }
+
+    listPanel.classList.add('view-switching');
+    window.setTimeout(() => {
+      apply();
+      window.setTimeout(() => listPanel.classList.remove('view-switching'), 30);
+    }, 130);
   });
 });
 

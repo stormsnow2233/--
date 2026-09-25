@@ -391,6 +391,38 @@ app.delete('/api/items/:id', (req, res) => {
   res.json({ success: true, removed: [...removeIds], message: '删除成功' });
 });
 
+/* Rename a file or a folder. This route was missing entirely — the admin has
+   been calling PATCH all along, so renaming only ever worked on Cloudflare and
+   silently 404'd locally. Nothing here is folder-specific. */
+app.patch('/api/items/:id', (req, res) => {
+  const { authKey, name } = req.body || {};
+  if (authKey && authKey !== ADMIN_SECRET) {
+    return res.status(401).json({ success: false, message: '管理密钥错误' });
+  }
+
+  const nextName = String(name || '').trim();
+  if (!nextName) {
+    return res.status(400).json({ success: false, message: '名称不能为空' });
+  }
+
+  const { id } = req.params;
+  const items = readImportedItems();
+  const target = items.find((entry) => String(entry.id) === String(id));
+
+  if (!target) {
+    return res.status(404).json({ success: false, message: '数据不存在' });
+  }
+
+  target.name = nextName;
+  writeImportedItems(items);
+
+  res.json({
+    success: true,
+    message: `${target.is_dir ? '文件夹' : '文件'}重命名成功`,
+    name: nextName,
+  });
+});
+
 /* SPA fallback for any other path. The versioned / and /admin routes above
    already handled those two, so this stays a plain sendFile. */
 app.get('*', (req, res) => {

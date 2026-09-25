@@ -294,7 +294,8 @@ function renderFolderItems() {
           <td>${escapeHtml(detailText)}</td>
           <td>
             <div class="row-actions">
-              ${item.is_dir ? `<button type="button" class="secondary small" data-enter-id="${item.id}">进入</button><button type="button" class="secondary small" data-rename-id="${item.id}">重命名</button>` : `<a href="${escapeHtml(item.url || '#')}" target="_blank" rel="noopener noreferrer" class="tiny-link">打开</a>`}
+              ${item.is_dir ? `<button type="button" class="secondary small" data-enter-id="${item.id}">进入</button>` : `<a href="${escapeHtml(item.url || '#')}" target="_blank" rel="noopener noreferrer" class="tiny-link">打开</a>`}
+              <button type="button" class="secondary small" data-rename-id="${item.id}">重命名</button>
               <button type="button" class="secondary small move-toggle" data-move-toggle aria-expanded="false" aria-label="移动 ${escapeHtml(item.name || '资源')}">
                 <i class="fa-solid fa-arrow-right-arrow-left" aria-hidden="true"></i> 移动
               </button>
@@ -367,7 +368,8 @@ function renderFolderItems() {
     button.addEventListener('click', async () => {
       const itemId = button.dataset.renameId;
       const item = allItems.find((entry) => String(entry.id) === String(itemId));
-      const nextName = window.prompt('请输入新的文件夹名称', item?.name || '');
+      const label = item && item.is_dir ? '文件夹' : '文件';
+      const nextName = window.prompt(`请输入新的${label}名称`, (item && item.name) || '');
 
       if (nextName === null || !nextName.trim()) {
         return;
@@ -384,7 +386,7 @@ function renderFolderItems() {
         showMessage(data.message || '重命名失败', 'error');
         return;
       }
-      showMessage('文件夹重命名成功', 'success');
+      showMessage(`${label}重命名成功`, 'success');
       await refreshAllData();
     });
   });
