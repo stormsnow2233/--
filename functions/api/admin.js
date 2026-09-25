@@ -1,6 +1,6 @@
 import { batchImport } from '../_shared/db.js';
 
-const ADMIN_SECRET = 'dev-admin-key';
+const ADMIN_SECRET = 'admin123';
 
 function jsonResponse(payload, status = 200) {
   return new Response(JSON.stringify(payload), {

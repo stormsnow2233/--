@@ -10,17 +10,16 @@ const importedList = document.getElementById('importedList');
 let parsedItems = [];
 
 function getAdminSecret() {
-  const savedSecret = localStorage.getItem('admin_key');
+  const defaultSecret = 'admin123';
+  const savedSecret = localStorage.getItem('admin_key') || defaultSecret;
+
   if (savedSecret) {
     adminSecretInput.value = savedSecret;
+    localStorage.setItem('admin_key', savedSecret);
     return savedSecret;
   }
 
-  const promptValue = window.prompt('请输入管理密钥：');
-  if (!promptValue) {
-    return '';
-  }
-
+  const promptValue = window.prompt('请输入管理密钥：') || defaultSecret;
   localStorage.setItem('admin_key', promptValue);
   adminSecretInput.value = promptValue;
   return promptValue;

@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 3000;
 const uploadDir = path.join(__dirname, 'uploads');
 const dataDir = path.join(__dirname, 'data');
 const importedItemsFile = path.join(dataDir, 'imported-items.json');
-const ADMIN_SECRET = process.env.ADMIN_SECRET || 'dev-admin-key';
+const ADMIN_SECRET = process.env.ADMIN_SECRET || 'admin123';
 
 fs.mkdirSync(uploadDir, { recursive: true });
 fs.mkdirSync(dataDir, { recursive: true });
