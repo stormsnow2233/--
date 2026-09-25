@@ -1,6 +1,7 @@
 const refreshBtn = document.getElementById('refreshBtn');
 const backFolderBtn = document.getElementById('backFolderBtn');
 const desktopGrid = document.getElementById('desktopGrid');
+const pagination = document.getElementById('pagination');
 const resourceSearch = document.getElementById('resourceSearch');
 const folderBreadcrumb = document.getElementById('folderBreadcrumb');
 const thankYouButton = document.getElementById('openThankYouList');
@@ -25,6 +26,8 @@ const ANNOUNCEMENT_MARKDOWN = `欢迎来到 **网盘资源库**。
 
 let allItems = [];
 let currentFolderId = 0;
+let currentPage = 1;
+const PAGE_SIZE = 13;
 
 function escapeHtml(value) {
   return String(value || '')
@@ -142,18 +145,59 @@ function formatItemDate(value) {
   return date.toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-');
 }
 
-function renderDesktopItems(items) {
-  if (!items || items.length === 0) {
-    desktopGrid.innerHTML = '<div class="empty-state">当前目录为空</div>';
+function renderPagination(totalPages) {
+  if (!pagination) {
     return;
   }
 
-  desktopGrid.innerHTML = items
-    .map((item) => {
+  if (totalPages <= 1) {
+    pagination.innerHTML = '';
+    pagination.classList.remove('visible');
+    return;
+  }
+
+  const pageButtons = Array.from({ length: totalPages }, (_, index) => {
+    const page = index + 1;
+    return `<button type="button" class="page-button ${page === currentPage ? 'active' : ''}" data-page="${page}">${page}</button>`;
+  }).join('');
+
+  pagination.innerHTML = `
+    <button type="button" class="page-button page-arrow" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''} aria-label="上一页"><i class="fa-solid fa-chevron-left"></i></button>
+    <div class="page-numbers">${pageButtons}</div>
+    <button type="button" class="page-button page-arrow" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''} aria-label="下一页"><i class="fa-solid fa-chevron-right"></i></button>
+  `;
+  pagination.classList.add('visible');
+
+  pagination.querySelectorAll('[data-page]:not([disabled])').forEach((button) => {
+    button.addEventListener('click', () => {
+      currentPage = Number(button.dataset.page);
+      renderDesktopItems(itemsForCurrentView);
+    });
+  });
+}
+
+let itemsForCurrentView = [];
+
+function renderDesktopItems(items) {
+  itemsForCurrentView = items || [];
+
+  if (!items || items.length === 0) {
+    desktopGrid.innerHTML = '<div class="empty-state">当前目录为空</div>';
+    renderPagination(0);
+    return;
+  }
+
+  const totalPages = Math.ceil(items.length / PAGE_SIZE);
+  currentPage = Math.min(Math.max(currentPage, 1), totalPages);
+  const pageItems = items.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  desktopGrid.innerHTML = pageItems
+    .map((item, index) => {
       const sizeText = item.size ? String(item.size) : item.is_dir ? '目录' : '未知大小';
+      const animationIndex = Math.min(index, 12);
 
       return `
-        <div class="desktop-item ${item.is_dir ? 'is-folder' : 'is-file'}" data-item-id="${escapeHtml(item.id)}" title="${escapeHtml(item.name || '未命名文件')}">
+        <div class="desktop-item ${item.is_dir ? 'is-folder' : 'is-file'}" data-item-id="${escapeHtml(item.id)}" style="--item-index: ${animationIndex};" title="${escapeHtml(item.name || '未命名文件')}">
           <div class="item-main">
             <div class="file-type-icon ${getItemIconClass(item)}" aria-hidden="true">${getItemIconHtml(item)}</div>
             <div class="desktop-name-wrap">
@@ -166,6 +210,7 @@ function renderDesktopItems(items) {
       `;
     })
     .join('');
+  renderPagination(totalPages);
 
   desktopGrid.querySelectorAll('.desktop-item').forEach((node) => {
     node.addEventListener('click', () => {
@@ -178,6 +223,7 @@ function renderDesktopItems(items) {
 
       if (item.is_dir) {
         currentFolderId = item.id;
+        currentPage = 1;
         renderBreadcrumb();
         renderDesktopItems(getFilteredItems(resourceSearch ? resourceSearch.value : ''));
         return;
@@ -200,10 +246,12 @@ async function fetchImportedItems() {
     }
 
     allItems = data.items || [];
+    currentPage = 1;
     renderBreadcrumb();
     renderDesktopItems(getFilteredItems(resourceSearch ? resourceSearch.value : ''));
   } catch (error) {
     allItems = [];
+    currentPage = 1;
     renderBreadcrumb();
     renderDesktopItems([]);
   }
@@ -211,6 +259,7 @@ async function fetchImportedItems() {
 
 if (resourceSearch) {
   resourceSearch.addEventListener('input', (event) => {
+    currentPage = 1;
     renderDesktopItems(getFilteredItems(event.target.value));
   });
 }
@@ -223,6 +272,7 @@ if (folderBreadcrumb) {
     }
 
     currentFolderId = button.dataset.breadcrumbFolder || 0;
+    currentPage = 1;
     renderBreadcrumb();
     renderDesktopItems(getFilteredItems(resourceSearch ? resourceSearch.value : ''));
   });
@@ -233,12 +283,14 @@ if (backFolderBtn) {
     const currentFolder = getFolderById(currentFolderId);
     if (!currentFolder) {
       currentFolderId = 0;
+      currentPage = 1;
       renderBreadcrumb();
       renderDesktopItems(getFilteredItems(resourceSearch ? resourceSearch.value : ''));
       return;
     }
 
     currentFolderId = currentFolder.parent_id || 0;
+    currentPage = 1;
     renderBreadcrumb();
     renderDesktopItems(getFilteredItems(resourceSearch ? resourceSearch.value : ''));
   });
