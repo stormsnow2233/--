@@ -1628,7 +1628,12 @@ body:has(.openlist-shell)::before {
   background:
     radial-gradient(circle at 18% 22%, rgba(126, 239, 216, 0.2), transparent 22%),
     radial-gradient(circle at 86% 12%, rgba(109, 178, 255, 0.16), transparent 20%);
-  animation: atmosphereDrift 16s ease-in-out infinite alternate;
+  /* Two very slow, non-synchronised loops read as "flowing" rather than as an
+     animation you can catch repeating. Gemini keeps its ambient motion in the
+     tens of seconds for the same reason. */
+  animation:
+    atmosphereDrift 38s ease-in-out infinite alternate,
+    atmosphereBreathe 27s ease-in-out infinite;
   z-index: -1;
 }
 
@@ -1820,6 +1825,13 @@ body:has(.openlist-shell)::before {
   to { transform: translate3d(2%, 2%, 0) scale(1.08); }
 }
 
+/* Runs on a different period than the drift so the two never phase back into an
+   obvious, catchable loop. */
+@keyframes atmosphereBreathe {
+  0%, 100% { opacity: 0.72; }
+  50% { opacity: 1; }
+}
+
 @keyframes announcementPulse {
   0%, 72%, 100% { box-shadow: 0 5px 16px rgba(37, 47, 64, 0.08); }
   78% { box-shadow: 0 0 0 7px rgba(22, 141, 242, 0.08), 0 8px 20px rgba(37, 47, 64, 0.12); }
@@ -1868,13 +1880,20 @@ body:has(.admin-shell) .admin-header {
    term, next page) only gets a short, quiet enter.
    ========================================================================== */
 body:has(.openlist-shell) {
-  --mo-quick: 0.16s;
-  --mo-base: 0.26s;
-  --mo-slow: 0.52s;
-  --mo-enter: 0.34s;
-  --mo-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --mo-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
-  --mo-stagger: 0.035s;
+  /* Gemini's own motion values, lifted from its shipped CSS:
+     - standard easing is Material 3 `cubic-bezier(0.2, 0, 0, 1)`
+     - Gemini runs TWO time scales: entrances ~0.4-0.5s, interaction feedback
+       83-200ms. Mixing them is what gives it its unhurried-but-crisp feel. */
+  --mo-instant: 83ms;
+  --mo-quick: 0.14s;
+  --mo-base: 0.22s;
+  --mo-slow: 0.42s;
+  --mo-enter: 0.32s;
+  --mo-breathe: 20s;
+  --mo-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --mo-ease-entrance: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --mo-ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --mo-stagger: 0.03s;
 }
 
 /* While the page is still booting the shell is hidden, so the static markup and
@@ -1911,31 +1930,31 @@ body:has(.openlist-shell) .openlist-shell {
 
 /* One entrance timeline for the whole page. */
 .openlist-shell.home-boot {
-  animation: homeShellIn 0.52s var(--mo-ease-out) both;
+  animation: homeShellIn var(--mo-slow) var(--mo-ease-entrance) both;
 }
 
 .openlist-shell.home-boot .site-header {
-  animation: homeHeaderIn 0.5s var(--mo-ease-out) 0.05s both;
+  animation: homeHeaderIn 0.42s var(--mo-ease-standard) 0.05s both;
 }
 
 .openlist-shell.home-boot .brand-mark {
-  animation: homeBrandIn 0.6s var(--ease-spring) 0.1s both;
+  animation: homeBrandIn 0.5s var(--mo-ease-entrance) 0.1s both;
 }
 
 .openlist-shell.home-boot .view-switcher {
-  animation: homeToolIn 0.5s var(--mo-ease-out) 0.14s both;
+  animation: homeToolIn 0.42s var(--mo-ease-standard) 0.14s both;
 }
 
 .openlist-shell.home-boot .page-toolbar {
-  animation: homeRiseIn 0.5s var(--mo-ease-out) 0.16s both;
+  animation: homeRiseIn 0.42s var(--mo-ease-standard) 0.16s both;
 }
 
 .openlist-shell.home-boot .search-panel {
-  animation: homeRiseIn 0.5s var(--mo-ease-out) 0.2s both;
+  animation: homeRiseIn 0.42s var(--mo-ease-standard) 0.2s both;
 }
 
 .openlist-shell.home-boot .list-panel {
-  animation: homePanelIn 0.58s var(--mo-ease-out) 0.22s both;
+  animation: homePanelIn 0.46s var(--mo-ease-standard) 0.22s both;
 }
 
 /* Thank-you entry: the footer owns centring via translateX(-50%), so animate
@@ -1945,15 +1964,15 @@ body:has(.openlist-shell) .openlist-shell {
 }
 
 .openlist-shell.home-boot ~ .thank-you-footer .thank-you-link {
-  animation: homeRiseSoftIn 0.5s var(--mo-ease-out) 0.46s both;
+  animation: homeRiseSoftIn 0.42s var(--mo-ease-standard) 0.46s both;
 }
 
 /* File-list entry. Only present during the one-shot boot window, so folder
    navigation, live search and pagination stay snappy instead of re-staging
    every row on every render. */
 .openlist-shell.home-boot .desktop-item {
-  animation: homeItemIn 0.34s var(--mo-ease-out) both;
-  animation-delay: calc(0.3s + (var(--item-index, 0) * 0.035s));
+  animation: homeItemIn 0.3s var(--mo-ease-standard) both;
+  animation-delay: calc(0.3s + (var(--item-index, 0) * var(--mo-stagger)));
 }
 
 /* ---------- brand mark ---------- */
@@ -1961,19 +1980,19 @@ body:has(.openlist-shell) .site-header .brand-mark {
   position: relative;
   isolation: isolate;
   cursor: default;
-  transition: transform var(--mo-base) var(--ease-spring), box-shadow var(--mo-base) ease;
+  transition: transform var(--mo-base) var(--mo-ease-standard), box-shadow var(--mo-base) ease;
 }
 
 body:has(.openlist-shell) .site-header .brand-mark::before {
   content: '';
   position: absolute;
-  inset: -7px;
+  inset: -9px;
   z-index: -1;
   border-radius: inherit;
-  background: radial-gradient(circle, rgba(67, 214, 199, 0.42), rgba(67, 214, 199, 0) 70%);
+  background: radial-gradient(circle, rgba(67, 214, 199, 0.5), rgba(67, 214, 199, 0) 70%);
   opacity: 0;
-  transform: scale(0.6);
-  transition: opacity var(--mo-base) ease, transform var(--mo-base) var(--mo-ease-out);
+  animation: homeGlowBreathe var(--mo-breathe) var(--mo-ease-standard) infinite;
+  transition: opacity var(--mo-base) ease, transform var(--mo-base) var(--mo-ease-standard);
 }
 
 body:has(.openlist-shell) .site-header .brand-mark:hover {
@@ -1982,6 +2001,7 @@ body:has(.openlist-shell) .site-header .brand-mark:hover {
 }
 
 body:has(.openlist-shell) .site-header .brand-mark:hover::before {
+  animation: none;
   opacity: 1;
   transform: scale(1);
 }
@@ -1992,14 +2012,14 @@ body:has(.openlist-shell) .site-header .brand-mark:hover::before {
    specificity weight on its own, so this stays a same-specificity, later-wins
    override of the boot rule above. */
 .site-header .brand-mark:not(.home-boot *) {
-  animation: homeBrandFloat 4.6s var(--mo-ease-in-out) infinite;
+  animation: homeBrandFloat 5.2s var(--mo-ease-standard) infinite;
 }
 
 /* ---------- header controls ---------- */
 body:has(.openlist-shell) .view-button,
 body:has(.openlist-shell) .icon-action {
   transition:
-    transform var(--mo-quick) var(--ease-spring),
+    transform var(--mo-quick) var(--mo-ease-standard),
     background-color var(--mo-quick) ease,
     color var(--mo-quick) ease,
     box-shadow var(--mo-quick) ease;
@@ -2014,7 +2034,7 @@ body:has(.openlist-shell) .icon-action:hover {
 body:has(.openlist-shell) .view-button:active,
 body:has(.openlist-shell) .icon-action:active {
   transform: translateY(0) scale(0.93);
-  transition-duration: 0.08s;
+  transition-duration: var(--mo-instant);
 }
 
 body:has(.openlist-shell) .view-button.active {
@@ -2030,7 +2050,7 @@ body:has(.openlist-shell) .breadcrumb-item {
   transition:
     background-color var(--mo-quick) ease,
     color var(--mo-quick) ease,
-    transform var(--mo-quick) var(--ease-spring);
+    transform var(--mo-quick) var(--mo-ease-standard);
 }
 
 body:has(.openlist-shell) .breadcrumb-item:hover {
@@ -2039,6 +2059,7 @@ body:has(.openlist-shell) .breadcrumb-item:hover {
 
 body:has(.openlist-shell) .breadcrumb-item:active {
   transform: translateY(0) scale(0.96);
+  transition-duration: var(--mo-instant);
 }
 
 body:has(.openlist-shell) .breadcrumb-separator {
@@ -2060,7 +2081,7 @@ body:has(.openlist-shell) .search-panel:focus-within {
 }
 
 body:has(.openlist-shell) .search-icon {
-  transition: transform var(--mo-base) var(--ease-spring), color var(--mo-base) ease;
+  transition: transform var(--mo-base) var(--mo-ease-standard), color var(--mo-base) ease;
 }
 
 body:has(.openlist-shell) .search-panel:focus-within .search-icon {
@@ -2073,7 +2094,7 @@ body:has(.openlist-shell) .list-panel {
   transition:
     background-color var(--mo-base) ease,
     box-shadow var(--mo-base) ease,
-    border-radius var(--mo-base) var(--ease-out);
+    border-radius var(--mo-base) var(--mo-ease-standard);
 }
 
 body:has(.openlist-shell) .desktop-grid {
@@ -2099,7 +2120,7 @@ body:has(.openlist-shell) .desktop-item {
   animation: none;
   transition:
     background-color var(--mo-base) ease,
-    transform var(--mo-base) var(--ease-out),
+    transform var(--mo-base) var(--mo-ease-standard),
     box-shadow var(--mo-base) ease;
 }
 
@@ -2109,20 +2130,12 @@ body:has(.openlist-shell) .desktop-item:hover {
 
 body:has(.openlist-shell) .file-type-icon {
   transition:
-    transform var(--mo-base) var(--ease-spring),
+    transform var(--mo-base) var(--mo-ease-standard),
     background-color var(--mo-base) ease;
 }
 
 body:has(.openlist-shell) .desktop-item:hover .file-type-icon {
-  transform: scale(1.08);
-}
-
-body:has(.openlist-shell) .desktop-item:hover .file-type-icon i {
-  animation: homeIconPop 0.5s var(--ease-spring);
-}
-
-body:has(.openlist-shell) .desktop-item.is-folder:hover .file-type-icon i {
-  animation: homeFolderPop 0.55s var(--ease-spring);
+  transform: scale(1.06);
 }
 
 body:has(.openlist-shell) .desktop-item:active {
@@ -2130,7 +2143,7 @@ body:has(.openlist-shell) .desktop-item:active {
 }
 
 body:has(.openlist-shell) .desktop-item:active .file-type-icon {
-  transform: scale(0.94);
+  transform: scale(0.96);
 }
 
 body:has(.openlist-shell) .desktop-name {
@@ -2145,15 +2158,15 @@ body:has(.openlist-shell) .desktop-item:hover .desktop-name {
    no longer fight the list-view rule. */
 body:has(.openlist-shell) .list-panel.grid-mode .desktop-item {
   transition:
-    transform var(--mo-base) var(--mo-ease-out),
+    transform var(--mo-base) var(--mo-ease-standard),
     box-shadow var(--mo-base) ease,
     background-color var(--mo-base) ease;
 }
 
 body:has(.openlist-shell) .list-panel.grid-mode .desktop-item:hover {
-  transform: translateY(-6px);
+  transform: translateY(-3px);
   background: #fff;
-  box-shadow: 0 16px 30px rgba(37, 47, 64, 0.14);
+  box-shadow: 0 12px 24px rgba(37, 47, 64, 0.12);
 }
 
 body:has(.openlist-shell) .list-panel.grid-mode .desktop-item:active {
@@ -2169,18 +2182,19 @@ body:has(.openlist-shell) .page-button {
   transition:
     background-color var(--mo-quick) ease,
     color var(--mo-quick) ease,
-    transform var(--mo-quick) var(--ease-spring),
+    transform var(--mo-quick) var(--mo-ease-standard),
     box-shadow var(--mo-quick) ease;
 }
 
 body:has(.openlist-shell) .page-button:active:not(:disabled) {
   transform: translateY(0) scale(0.94);
+  transition-duration: var(--mo-instant);
 }
 
 /* ---------- fixed footer ---------- */
 body:has(.openlist-shell) .thank-you-footer .thank-you-link {
   transition:
-    transform var(--mo-base) var(--ease-spring),
+    transform var(--mo-base) var(--mo-ease-standard),
     background-color var(--mo-base) ease,
     box-shadow var(--mo-base) ease;
 }
@@ -2193,6 +2207,7 @@ body:has(.openlist-shell) .thank-you-footer .thank-you-link:hover {
 
 body:has(.openlist-shell) .thank-you-footer .thank-you-link:active {
   transform: translateY(-1px) scale(0.97);
+  transition-duration: var(--mo-instant);
 }
 
 /* ---------- focus visibility ---------- */
@@ -2251,19 +2266,14 @@ body:has(.openlist-shell) :is(button, a, input):focus-visible {
 
 @keyframes homeBrandFloat {
   0%, 100% { transform: rotate(-15deg) translateY(0); }
-  50% { transform: rotate(-15deg) translateY(-4px); }
+  50% { transform: rotate(-15deg) translateY(-3px); }
 }
 
-@keyframes homeIconPop {
-  0% { transform: scale(1) rotate(0); }
-  45% { transform: scale(1.2) rotate(-8deg); }
-  100% { transform: scale(1) rotate(0); }
-}
-
-@keyframes homeFolderPop {
-  0%, 100% { transform: translateY(0) scale(1); }
-  40% { transform: translateY(-3px) scale(1.12); }
-  75% { transform: translateY(1px) scale(1.02); }
+/* The logo halo breathes on its own, the way Gemini's .lm-glow blooms to
+   opacity 0.5 and back rather than snapping in. */
+@keyframes homeGlowBreathe {
+  0%, 100% { opacity: 0.18; transform: scale(0.88); }
+  50% { opacity: 0.5; transform: scale(1.06); }
 }
 
 /* ---------- thank-you modal ---------- */
@@ -2272,16 +2282,16 @@ body:has(.openlist-shell) .thank-you-modal:not(.hidden) {
 }
 
 body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-modal-panel {
-  animation: thankYouPanelIn 0.34s var(--ease-spring) both;
+  animation: thankYouPanelIn 0.36s var(--mo-ease-entrance) both;
 }
 
 body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-modal-header {
-  animation: thankYouHeaderIn 0.4s var(--mo-ease-out) 0.08s both;
+  animation: thankYouHeaderIn 0.4s var(--mo-ease-standard) 0.08s both;
 }
 
 body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-item,
 body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-empty {
-  animation: thankYouItemIn 0.3s var(--ease-spring) both;
+  animation: thankYouItemIn 0.28s var(--mo-ease-standard) both;
   animation-delay: calc(0.12s + (var(--item-index, 0) * 0.05s));
 }
 
@@ -2301,11 +2311,11 @@ body:has(.openlist-shell) .thank-you-modal.is-closing .thank-you-empty {
 }
 
 body:has(.openlist-shell) .thank-you-modal.is-closing {
-  animation: thankYouBackdropOut 0.18s ease-in both;
+  animation: thankYouBackdropOut 0.18s var(--mo-ease-exit) both;
 }
 
 body:has(.openlist-shell) .thank-you-modal.is-closing .thank-you-modal-panel {
-  animation: thankYouPanelOut 0.18s ease-in both;
+  animation: thankYouPanelOut 0.18s var(--mo-ease-exit) both;
 }
 
 @keyframes thankYouBackdropIn {
