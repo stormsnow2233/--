@@ -19,6 +19,21 @@ const thankYouEditor = document.getElementById('thankYouEditor');
 const saveThankYouBtn = document.getElementById('saveThankYouBtn');
 const announcementEditor = document.getElementById('announcementEditor');
 const saveAnnouncementBtn = document.getElementById('saveAnnouncementBtn');
+const batchBar = document.getElementById('batchBar');
+const batchCount = document.getElementById('batchCount');
+const batchToggleAll = document.getElementById('batchToggleAll');
+const batchSelectAll = document.getElementById('batchSelectAll');
+const batchClear = document.getElementById('batchClear');
+const batchDelete = document.getElementById('batchDelete');
+const batchDeleteModal = document.getElementById('batchDeleteModal');
+const batchDeleteSummary = document.getElementById('batchDeleteSummary');
+const batchDeleteList = document.getElementById('batchDeleteList');
+const batchDeleteCancel = document.getElementById('batchDeleteCancel');
+const batchDeleteConfirm = document.getElementById('batchDeleteConfirm');
+
+/* Ids ticked in the file table. Kept in a Set so the selection survives a
+   re-render trigger and can be diffed cheaply. */
+const selectedItemIds = new Set();
 
 let parsedItems = [];
 let allItems = [];
@@ -256,7 +271,11 @@ function renderFolderItems() {
   const items = getVisibleItems();
 
   if (!items.length) {
-    folderItemsBody.innerHTML = '<tr><td colspan="4" class="empty">当前目录为空</td></tr>';
+    folderItemsBody.innerHTML = '<tr><td colspan="5" class="empty">当前目录为空</td></tr>';
+    // Nothing is selectable here, so a stale selection would leave the batch bar
+    // floating above an empty table.
+    selectedItemIds.clear();
+    syncBatchUi();
     return;
   }
 
@@ -264,14 +283,21 @@ function renderFolderItems() {
     .map((item, rowIndex) => {
       const typeLabel = item.is_dir ? '文件夹' : '文件';
       const detailText = item.is_dir ? '目录' : item.url || item.size || '—';
+      const checked = selectedItemIds.has(String(item.id)) ? ' checked' : '';
       return `
         <tr style="--row-index: ${Math.min(rowIndex, 12)};">
+          <td class="col-check">
+            <input type="checkbox" data-select-id="${escapeHtml(item.id)}"${checked} aria-label="选择 ${escapeHtml(item.name || '未命名文件')}" />
+          </td>
           <td>${escapeHtml(item.name || '未命名文件')}</td>
           <td>${typeLabel}</td>
           <td>${escapeHtml(detailText)}</td>
           <td>
             <div class="row-actions">
               ${item.is_dir ? `<button type="button" class="secondary small" data-enter-id="${item.id}">进入</button><button type="button" class="secondary small" data-rename-id="${item.id}">重命名</button>` : `<a href="${escapeHtml(item.url || '#')}" target="_blank" rel="noopener noreferrer" class="tiny-link">打开</a>`}
+              <button type="button" class="secondary small move-toggle" data-move-toggle aria-expanded="false" aria-label="移动 ${escapeHtml(item.name || '资源')}">
+                <i class="fa-solid fa-arrow-right-arrow-left" aria-hidden="true"></i> 移动
+              </button>
               <button type="button" class="danger small" data-delete-id="${item.id}">删除</button>
             </div>
             <div class="move-control">
@@ -280,12 +306,34 @@ function renderFolderItems() {
                 <option value="0">根目录</option>
                 ${buildFolderOptions(item.id)}
               </select>
+              <button type="button" class="secondary small" data-move-cancel>收起</button>
             </div>
           </td>
         </tr>
       `;
     })
     .join('');
+
+  // Drop ids that are no longer on screen (deleted elsewhere, or folder changed)
+  const visibleIds = new Set(items.map((item) => String(item.id)));
+  [...selectedItemIds].forEach((id) => {
+    if (!visibleIds.has(id)) {
+      selectedItemIds.delete(id);
+    }
+  });
+  syncBatchUi();
+
+  folderItemsBody.querySelectorAll('[data-select-id]').forEach((box) => {
+    box.addEventListener('change', () => {
+      const id = String(box.dataset.selectId);
+      if (box.checked) {
+        selectedItemIds.add(id);
+      } else {
+        selectedItemIds.delete(id);
+      }
+      syncBatchUi();
+    });
+  });
 
   folderItemsBody.querySelectorAll('[data-enter-id]').forEach((button) => {
     button.addEventListener('click', () => {
@@ -359,6 +407,207 @@ function renderFolderItems() {
       showMessage('移动成功', 'success');
       await refreshAllData();
     });
+  });
+
+  // "移动" reveals the folder picker for this row only, and only on demand.
+  // The picker stays in normal flow (rather than a floating popover) because
+  // .table-wrap scrolls horizontally and would clip anything absolute.
+  folderItemsBody.querySelectorAll('[data-move-toggle]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const row = button.closest('tr');
+      if (!row) {
+        return;
+      }
+      const control = row.querySelector('.move-control');
+      if (!control) {
+        return;
+      }
+      const opening = !control.classList.contains('is-open');
+      closeOpenMoveControls(control);
+      control.classList.toggle('is-open', opening);
+      button.setAttribute('aria-expanded', String(opening));
+      if (opening) {
+        const select = control.querySelector('.move-select');
+        if (select) {
+          select.focus();
+        }
+      }
+    });
+  });
+
+  folderItemsBody.querySelectorAll('[data-move-cancel]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const control = button.closest('.move-control');
+      if (control) {
+        closeOpenMoveControls();
+      }
+    });
+  });
+}
+
+/* Only one row's picker open at a time, so the table cannot end up with a
+   stack of expanded panels. Pass an element to keep it open. */
+function closeOpenMoveControls(keep) {
+  folderItemsBody.querySelectorAll('.move-control.is-open').forEach((control) => {
+    if (control === keep) {
+      return;
+    }
+    control.classList.remove('is-open');
+    const row = control.closest('tr');
+    const toggle = row ? row.querySelector('[data-move-toggle]') : null;
+    if (toggle) {
+      toggle.setAttribute('aria-expanded', 'false');
+    }
+  });
+}
+
+/* ---------- batch selection ---------- */
+
+/* Rows currently rendered, so "全选本页" means what it says. */
+function visibleFolderItems() {
+  const ids = [...folderItemsBody.querySelectorAll('[data-select-id]')].map((box) => String(box.dataset.selectId));
+  return ids.map((id) => allItems.find((item) => String(item.id) === id)).filter(Boolean);
+}
+
+function syncBatchUi() {
+  if (!batchBar) {
+    return;
+  }
+
+  const boxes = [...folderItemsBody.querySelectorAll('[data-select-id]')];
+  const selectedOnPage = boxes.filter((box) => box.checked).length;
+  const total = selectedItemIds.size;
+
+  batchBar.classList.toggle('hidden', total === 0);
+  if (batchCount) {
+    batchCount.textContent = `已选 ${total} 项`;
+  }
+
+  if (batchToggleAll) {
+    batchToggleAll.checked = boxes.length > 0 && selectedOnPage === boxes.length;
+    // A partial selection should not read as "all".
+    batchToggleAll.indeterminate = selectedOnPage > 0 && selectedOnPage < boxes.length;
+    batchToggleAll.disabled = boxes.length === 0;
+  }
+
+  if (batchDelete) {
+    batchDelete.disabled = total === 0;
+  }
+}
+
+function setAllOnPage(checked) {
+  folderItemsBody.querySelectorAll('[data-select-id]').forEach((box) => {
+    box.checked = checked;
+    const id = String(box.dataset.selectId);
+    if (checked) {
+      selectedItemIds.add(id);
+    } else {
+      selectedItemIds.delete(id);
+    }
+  });
+  syncBatchUi();
+}
+
+function openBatchDeleteModal() {
+  if (!batchDeleteModal || selectedItemIds.size === 0) {
+    return;
+  }
+
+  const chosen = allItems.filter((item) => selectedItemIds.has(String(item.id)));
+  const folders = chosen.filter((item) => item.is_dir).length;
+
+  if (batchDeleteSummary) {
+    batchDeleteSummary.textContent = folders
+      ? `共 ${chosen.length} 项（其中 ${folders} 个文件夹，会连同内容一起删除）`
+      : `共 ${chosen.length} 项`;
+  }
+
+  if (batchDeleteList) {
+    const names = chosen.slice(0, 8).map((item) => item.name || '未命名文件');
+    const extra = chosen.length > names.length ? `<li class="subtle">…还有 ${chosen.length - names.length} 项</li>` : '';
+    batchDeleteList.innerHTML = names.map((name) => `<li>${escapeHtml(name)}</li>`).join('') + extra;
+  }
+
+  batchDeleteModal.classList.add('visible');
+  batchDeleteModal.setAttribute('aria-hidden', 'false');
+}
+
+function closeBatchDeleteModal() {
+  if (!batchDeleteModal) {
+    return;
+  }
+  batchDeleteModal.classList.remove('visible');
+  batchDeleteModal.setAttribute('aria-hidden', 'true');
+}
+
+async function runBatchDelete() {
+  const ids = [...selectedItemIds];
+  if (!ids.length) {
+    return;
+  }
+
+  const adminSecret = getAdminSecret();
+  if (batchDeleteConfirm) {
+    batchDeleteConfirm.disabled = true;
+    batchDeleteConfirm.textContent = '删除中…';
+  }
+
+  try {
+    const response = await fetch('/api/items/batch-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids, authKey: adminSecret }),
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      showMessage(data.message || '批量删除失败', 'error');
+      return;
+    }
+
+    selectedItemIds.clear();
+    closeBatchDeleteModal();
+    showMessage(data.message || `已删除 ${data.removedCount} 项`, 'success');
+    await refreshAllData();
+  } catch (error) {
+    showMessage('批量删除失败，请重试', 'error');
+  } finally {
+    if (batchDeleteConfirm) {
+      batchDeleteConfirm.disabled = false;
+      batchDeleteConfirm.textContent = '确认删除';
+    }
+  }
+}
+
+if (batchToggleAll) {
+  batchToggleAll.addEventListener('change', () => setAllOnPage(batchToggleAll.checked));
+}
+
+if (batchSelectAll) {
+  batchSelectAll.addEventListener('click', () => setAllOnPage(true));
+}
+
+if (batchClear) {
+  batchClear.addEventListener('click', () => setAllOnPage(false));
+}
+
+if (batchDelete) {
+  batchDelete.addEventListener('click', openBatchDeleteModal);
+}
+
+if (batchDeleteCancel) {
+  batchDeleteCancel.addEventListener('click', closeBatchDeleteModal);
+}
+
+if (batchDeleteConfirm) {
+  batchDeleteConfirm.addEventListener('click', runBatchDelete);
+}
+
+if (batchDeleteModal) {
+  batchDeleteModal.addEventListener('click', (event) => {
+    if (event.target === batchDeleteModal) {
+      closeBatchDeleteModal();
+    }
   });
 }
 
@@ -627,6 +876,24 @@ if (createFolderModal) {
     }
   });
 }
+
+// Escape closes whichever dialog is open, or collapses an open move picker.
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape') {
+    return;
+  }
+  if (batchDeleteModal && batchDeleteModal.classList.contains('visible')) {
+    closeBatchDeleteModal();
+    return;
+  }
+  if (createFolderModal && createFolderModal.classList.contains('visible')) {
+    closeCreateFolderModal();
+    return;
+  }
+  if (folderItemsBody && folderItemsBody.querySelector('.move-control.is-open')) {
+    closeOpenMoveControls();
+  }
+});
 
 if (backFolderBtn) {
   backFolderBtn.addEventListener('click', () => {

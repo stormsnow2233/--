@@ -6,8 +6,16 @@
   --panel-soft: #eef4ff;
   --primary: #2a6df6;
   --primary-soft: rgba(42, 109, 246, 0.08);
+  /* Was referenced in four rules but never declared, so `var(--primary-dark)`
+     resolved to nothing and those declarations were dropped — the text fell
+     back to its inherited colour instead of the intended deep blue. */
+  --primary-dark: #1c4fd0;
   --text: #1d2433;
   --text-soft: #5d6b82;
+  /* Also referenced (9 rules, all admin-side) without ever being declared, so
+     those `color` declarations were silently dropped too. Sits between the
+     body text and --text-soft, which is what those hints want. */
+  --muted: #6b7788;
   --border: rgba(112, 136, 181, 0.18);
   --shadow: 0 18px 40px rgba(43, 65, 104, 0.12);
   --success: #1dbf73;
@@ -1236,11 +1244,7 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes pulsePrimary {
-  0% { transform: scale(0.98); }
-  50% { transform: scale(1.01); }
-  100% { transform: scale(1); }
-}
+/* `@keyframes pulsePrimary` was removed — nothing referenced it. */
 
 .admin-main {
   display: flex;
@@ -1506,23 +1510,38 @@ input[data-field] {
   margin-bottom: 8px;
 }
 
+/* Collapsed by default: every row used to carry a permanent ~49px "移动到"
+   panel, so a full page of resources was mostly folder pickers. Now the picker
+   only exists while the row's 移动 button is open. Kept in normal flow rather
+   than absolutely positioned, because .table-wrap scrolls horizontally and
+   would clip a floating popover. */
 .move-control {
-  display: flex;
+  display: none;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  margin-top: 8px;
   padding: 8px 10px;
   border: 1px solid #dfe7f5;
   border-radius: 12px;
   background: linear-gradient(180deg, #f9fbff 0%, #eef5ff 100%);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
-  animation: slideIn 0.22s ease;
 }
 
-@keyframes slideIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Value > 1 so it beats the `.row-actions { margin-bottom: 8px }` neighbour and
+   the display rules above when opened. The entrance animation is already
+   declared on this element in the admin motion layer. */
+.move-control.is-open {
+  display: flex;
 }
+
+.move-toggle i {
+  font-size: 11px;
+  margin-right: 2px;
+}
+
+/* `@keyframes slideIn` was removed — the move control now uses the admin
+   layer's adSlideIn, so nothing referenced it any more. */
 
 .move-label {
   font-size: 12px;
@@ -1550,6 +1569,104 @@ input[data-field] {
   outline: none;
   border-color: #7b9cff;
   box-shadow: 0 0 0 3px rgba(93,127,233,0.12);
+}
+
+/* ---------- batch selection ---------- */
+.col-check {
+  width: 34px;
+  padding-right: 0 !important;
+  text-align: center;
+}
+
+.col-check input[type='checkbox'],
+.batch-bar input[type='checkbox'] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--primary);
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.col-check input[type='checkbox']:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.batch-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 10px 0 2px;
+  padding: 9px 12px;
+  border: 1px solid rgba(42, 109, 246, 0.22);
+  border-radius: 12px;
+  background: rgba(42, 109, 246, 0.07);
+  animation: adSlideIn var(--ad-base, 0.24s) var(--ad-ease, ease) both;
+}
+
+.batch-bar.hidden {
+  display: none;
+}
+
+.batch-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary-dark, #2a6df6);
+}
+
+.batch-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.batch-bar-actions .danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Selected rows get a tint so it is obvious what "删除所选" will take. */
+#folderItemsBody tr:has(input[data-select-id]:checked) {
+  background: rgba(42, 109, 246, 0.06);
+}
+
+/* ---------- batch delete dialog ---------- */
+.batch-delete-summary {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #202735;
+}
+
+.batch-delete-list {
+  max-height: 168px;
+  overflow-y: auto;
+  margin: 0 0 12px;
+  padding: 10px 12px 10px 26px;
+  border: 1px solid #e3ecfb;
+  border-radius: 10px;
+  background: #f7faff;
+  font-size: 13px;
+  color: #46536a;
+}
+
+.batch-delete-list li {
+  margin: 3px 0;
+  word-break: break-all;
+}
+
+.batch-delete-list li.subtle {
+  color: #8a96ad;
+  font-style: italic;
+}
+
+.batch-delete-warn {
+  margin: 0 0 14px;
+  font-size: 12px;
+  color: #d1453b;
 }
 
 /* Which cloud a parsed row came from. Colour-coded so a mixed batch is readable
@@ -1603,7 +1720,10 @@ input[data-field] {
 
 .folder-modal-panel {
   width: min(420px, calc(100vw - 32px));
-  background: rgba(255,255,255,0.96);
+  /* Fully opaque. At 0.96 the dark modal backdrop (rgba(17,24,39,0.45)) tinted
+     the panel and the page text behind it bled through, which made the
+     confirmation copy hard to read. */
+  background: #fff;
   border: 1px solid rgba(63, 98, 187, 0.14);
   border-radius: 18px;
   box-shadow: var(--shadow);
@@ -2090,7 +2210,7 @@ body:has(.admin-shell) input:focus {
   box-shadow: 0 0 0 3px rgba(42, 109, 246, 0.16);
 }
 
-/* ---------- move control (existing slideIn, retimed to the shared grammar) ---------- */
+/* ---------- move control (revealed on demand by the row's 移动 button) ---------- */
 body:has(.admin-shell) .move-control {
   animation: adSlideIn var(--ad-base) var(--ad-ease) both;
   transition: box-shadow var(--ad-quick) ease, border-color var(--ad-quick) ease;
@@ -2447,18 +2567,84 @@ body:has(.openlist-shell) .desktop-grid {
   transition: opacity var(--mo-quick) ease;
 }
 
+/* Empty states. The icon now lives in the markup (one per case: search miss,
+   empty folder, nothing imported yet), so the old ::before glyph is gone —
+   keeping it would have stacked two icons. Layout is a centred column, and it
+   stops being a flex row so the grid/desktop variants cannot squash it. */
+body:has(.openlist-shell) .desktop-grid > .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  min-height: 260px;
+  height: auto;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-soft);
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
 body:has(.openlist-shell) .empty-state {
   animation: homeFadeIn var(--mo-enter) ease both;
 }
 
-body:has(.openlist-shell) .empty-state::before {
-  content: '\f15b';
-  display: block;
-  margin-bottom: 10px;
-  font-family: 'Font Awesome 6 Free';
-  font-weight: 400;
-  font-size: 26px;
-  opacity: 0.4;
+body:has(.openlist-shell) .empty-state > i {
+  /* Fixed box so the layout does not jump while the Font Awesome webfont is
+     still loading — the glyph would otherwise appear 4-5s in and push the text
+     down. Matching hide/show rules below apply to the admin empty cell too. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin-bottom: 12px;
+  font-size: 30px;
+  line-height: 1;
+  color: #a9b6c9;
+}
+
+body:has(.openlist-shell) .empty-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  word-break: break-word;
+}
+
+body:has(.openlist-shell) .empty-hint {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--text-soft);
+}
+
+body:has(.openlist-shell) .empty-action {
+  margin-top: 14px;
+  padding: 7px 16px;
+  border: 1px solid rgba(42, 109, 246, 0.24);
+  border-radius: 999px;
+  background: rgba(42, 109, 246, 0.08);
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform var(--mo-quick) var(--mo-ease-pop),
+    background-color var(--mo-quick) ease,
+    box-shadow var(--mo-quick) ease;
+}
+
+body:has(.openlist-shell) .empty-action:hover {
+  background: rgba(42, 109, 246, 0.14);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px -6px rgba(42, 109, 246, 0.42);
+}
+
+body:has(.openlist-shell) .empty-action:active {
+  transform: translateY(0) scale(0.95);
+  transition-duration: var(--mo-instant);
 }
 
 /* ---------- file rows ---------- */

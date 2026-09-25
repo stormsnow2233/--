@@ -291,6 +291,54 @@ app.post('/api/admin', (req, res) => {
   return res.status(400).json({ success: false, message: '未知指令' });
 });
 
+/* Batch delete. One request for N ids instead of N requests: reading and
+   writing the file once also means a partial failure cannot leave the data in a
+   half-updated state between calls. Deleting a folder still removes its whole
+   subtree. Unknown ids are reported rather than failing the whole batch. */
+app.post('/api/items/batch-delete', (req, res) => {
+  const { authKey, ids } = req.body || {};
+  if (authKey && authKey !== ADMIN_SECRET) {
+    return res.status(401).json({ success: false, message: '管理密钥错误' });
+  }
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ success: false, message: '未选择要删除的项' });
+  }
+
+  const items = readImportedItems();
+  const wanted = new Set(ids.map((id) => String(id)));
+  const removeIds = new Set();
+  const notFound = [];
+
+  for (const id of wanted) {
+    const target = items.find((entry) => String(entry.id) === id);
+    if (!target) {
+      notFound.push(id);
+      continue;
+    }
+    removeIds.add(String(target.id));
+    if (target.is_dir) {
+      collectDescendantIds(items, target.id, removeIds);
+    }
+  }
+
+  if (removeIds.size === 0) {
+    return res.status(404).json({ success: false, message: '所选数据已不存在', notFound });
+  }
+
+  const remaining = items.filter((entry) => !removeIds.has(String(entry.id)));
+  writeImportedItems(remaining);
+
+  res.json({
+    success: true,
+    requested: wanted.size,
+    removed: [...removeIds],
+    removedCount: removeIds.size,
+    notFound,
+    message: `已删除 ${removeIds.size} 项`,
+  });
+});
+
 app.delete('/api/items/:id', (req, res) => {
   const { authKey } = req.body || {};
   if (authKey && authKey !== ADMIN_SECRET) {

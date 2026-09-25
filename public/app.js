@@ -315,12 +315,66 @@ function renderPagination(totalPages) {
 
 let itemsForCurrentView = [];
 
+/* Empty states, three different ones:
+   - a search matched nothing  -> say so and offer to clear it
+   - the folder is empty       -> say so
+   - there is nothing at all   -> first-run guidance, otherwise a brand new
+     visitor just sees a blank panel and has no idea what the page is.
+   `items` is the already-filtered list, so we can tell a search miss from an
+   actually empty folder. */
+function renderEmptyState() {
+  const query = resourceSearch ? resourceSearch.value.trim() : '';
+
+  if (query) {
+    desktopGrid.innerHTML = `
+      <div class="empty-state is-search-miss">
+        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+        <p class="empty-title">没有找到匹配「${escapeHtml(query)}」的资源</p>
+        <p class="empty-hint">换个关键词试试，或清空搜索查看全部内容。</p>
+        <button type="button" class="empty-action" data-clear-search>清空搜索</button>
+      </div>
+    `;
+    const clearButton = desktopGrid.querySelector('[data-clear-search]');
+    if (clearButton) {
+      clearButton.addEventListener('click', () => {
+        if (!resourceSearch) {
+          return;
+        }
+        resourceSearch.value = '';
+        currentPage = 1;
+        renderDesktopItems(getFilteredItems(''));
+        resourceSearch.focus();
+      });
+    }
+    return;
+  }
+
+  if (!allItems.length) {
+    desktopGrid.innerHTML = `
+      <div class="empty-state is-first-run">
+        <i class="fa-solid fa-box-open" aria-hidden="true"></i>
+        <p class="empty-title">还没有任何资源</p>
+        <p class="empty-hint">在后台粘贴分享链接即可导入，支持多个网盘。</p>
+      </div>
+    `;
+    return;
+  }
+
+  desktopGrid.innerHTML = `
+    <div class="empty-state is-folder-empty">
+      <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
+      <p class="empty-title">这个文件夹是空的</p>
+      <p class="empty-hint">返回上一级可以查看其它资源。</p>
+    </div>
+  `;
+}
+
 function renderDesktopItems(items) {
   itemsForCurrentView = items || [];
   const booting = isBooting();
 
   if (!items || items.length === 0) {
-    desktopGrid.innerHTML = '<div class="empty-state">当前目录为空</div>';
+    renderEmptyState();
     renderPagination(0);
     if (booting) {
       startBootWindow(0);
@@ -688,4 +742,32 @@ if (refreshBtn) {
 
 fetchImportedItems();
 renderAnnouncementMarkdown(getAnnouncementMarkdown());
-setAnnouncementVisible(true);
+
+/* Reveal the announcement only once the main interface has settled.
+   Showing it immediately meant it popped up on its own while the page behind it
+   was still behind the first-paint gate — so the notice arrived first and the
+   site arrived after, which read as jarring. Now the shell is revealed and the
+   notice slides in together.
+
+   `bootSettled` is set by settleShell() at the end of the entrance timeline.
+   The poll below covers the other cases: no shell at all (open it right away),
+   and a gate that never lifts because the entrance never ran (CSS safety
+   animation / prefers-reduced-motion), where waiting would strand the notice. */
+function revealAnnouncementWhenReady() {
+  const ANNOUNCEMENT_MAX_WAIT_MS = 5000;
+
+  if (!shell || bootSettled) {
+    setAnnouncementVisible(true);
+    return;
+  }
+
+  const startedAt = Date.now();
+  const timer = window.setInterval(() => {
+    if (bootSettled || Date.now() - startedAt > ANNOUNCEMENT_MAX_WAIT_MS) {
+      window.clearInterval(timer);
+      setAnnouncementVisible(true);
+    }
+  }, 60);
+}
+
+revealAnnouncementWhenReady();
