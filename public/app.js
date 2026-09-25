@@ -125,6 +125,47 @@ if (shell) {
   document.documentElement.classList.remove('is-first-paint');
 }
 
+/* Easter egg: click the round V mark and it spins a full turn.
+   The spin is a CSS animation; this only adds and removes `is-spinning`. The
+   class is cleared on animationend, so the resting float and hover states take
+   over the moment the turn finishes. Rapid clicks are absorbed into the turn
+   that is already playing rather than restarting it. */
+const brandMark = document.querySelector('.site-header .brand-mark');
+
+if (brandMark) {
+  let brandSpinTimer = null;
+  let brandSpinEnd = null;
+
+  const endBrandSpin = () => {
+    if (brandSpinTimer !== null) {
+      clearTimeout(brandSpinTimer);
+      brandSpinTimer = null;
+    }
+    if (brandSpinEnd) {
+      brandMark.removeEventListener('animationend', brandSpinEnd);
+      brandSpinEnd = null;
+    }
+    brandMark.classList.remove('is-spinning');
+  };
+
+  brandMark.addEventListener('click', () => {
+    if (brandMark.classList.contains('is-spinning')) {
+      return;
+    }
+
+    brandMark.classList.add('is-spinning');
+    brandSpinEnd = (event) => {
+      if (event.target === brandMark && event.animationName === 'brandSpin') {
+        endBrandSpin();
+      }
+    };
+    brandMark.addEventListener('animationend', brandSpinEnd);
+    // Safety net. Under prefers-reduced-motion the animation is disabled, so
+    // animationend never arrives and the class would otherwise stick.
+    brandSpinTimer = window.setTimeout(endBrandSpin, 1200);
+  });
+}
+
 function escapeHtml(value) {
   return String(value || '')
     .replace(/&/g, '&amp;')

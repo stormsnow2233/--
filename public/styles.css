@@ -2004,7 +2004,7 @@ body:has(.openlist-shell) .openlist-shell {
 body:has(.openlist-shell) .site-header .brand-mark {
   position: relative;
   isolation: isolate;
-  cursor: default;
+  cursor: pointer;
   transition: transform var(--mo-base) var(--mo-ease-standard), box-shadow var(--mo-base) ease;
 }
 
@@ -2038,6 +2038,19 @@ body:has(.openlist-shell) .site-header .brand-mark:hover::before {
    override of the boot rule above. */
 .site-header .brand-mark:not(.home-boot *) {
   animation: homeBrandFloat 5.2s var(--mo-ease-standard) infinite;
+}
+
+/* ---------- easter egg: click the V to spin it a full turn ----------
+   Declared after the float rule so it wins the same-specificity tie, and after
+   the hover rules so the glow flare beats the hover glow while it plays. app.js
+   only adds the class once and removes it on animationend; the generous 1.2s
+   timeout there only covers reduced motion, where the event never fires. */
+.site-header .brand-mark.is-spinning {
+  animation: brandSpin 0.9s var(--mo-ease-pop);
+}
+
+body:has(.openlist-shell) .site-header .brand-mark.is-spinning::before {
+  animation: brandSpinGlow 0.9s ease-out;
 }
 
 /* ---------- header controls ---------- */
@@ -2311,6 +2324,20 @@ body:has(.openlist-shell) :is(button, a, input):focus-visible {
 @keyframes homeGlowBreathe {
   0%, 100% { opacity: 0.2; transform: scale(0.9); }
   50% { opacity: 0.46; transform: scale(1.08); }
+}
+
+/* Easter egg: one full turn with a touch of overshoot, then it settles back
+   onto the -15deg resting tilt the mark always wears. */
+@keyframes brandSpin {
+  0% { transform: rotate(-15deg) scale(1); }
+  45% { transform: rotate(185deg) scale(0.9); }
+  100% { transform: rotate(345deg) scale(1); }
+}
+
+@keyframes brandSpinGlow {
+  0% { opacity: 0.25; transform: scale(0.85); }
+  35% { opacity: 0.9; transform: scale(1.4); }
+  100% { opacity: 0.2; transform: scale(1); }
 }
 
 /* ---------- thank-you modal ---------- */
