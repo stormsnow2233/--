@@ -11,9 +11,20 @@ const thankYouPagination = document.getElementById('thankYouPagination');
 const closeThankYouModalBtn = document.getElementById('closeThankYouModal');
 const viewButtons = document.querySelectorAll('.view-button');
 const listPanel = document.querySelector('.list-panel');
+const shell = document.querySelector('.openlist-shell');
 const announcementModal = document.getElementById('announcementModal');
 const closeAnnouncementButton = document.getElementById('closeAnnouncement');
 const announcementContent = document.getElementById('announcementContent');
+
+const MOTION_STAGGER_MS = 35;
+const MOTION_STAGGER_CAP = 12;
+const MOTION_BASE_MS = 300;
+const MOTION_ENTER_MS = 340;
+
+let bootWindowArmed = false;
+let bootTimer = null;
+let bootSettled = false;
+let closeTimer = null;
 
 const THANKS_KEY = 'thank_you_links';
 const ANNOUNCEMENT_KEY = 'announcement_markdown';
@@ -31,6 +42,88 @@ let currentPage = 1;
 const PAGE_SIZE = 13;
 let thankYouPage = 1;
 const THANK_YOU_PAGE_SIZE = 7;
+
+function prefersReducedMotion() {
+  return typeof window.matchMedia === 'function'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+/* One entrance per page load.
+   `index.html` starts with html.is-first-paint, which keeps the shell hidden so
+   the static markup and the first /api/imported-items response never flash over
+   each other. Rendering the first batch of rows consumes the boot window; after
+   that, `is-steady` takes over, so folder navigation, live search and pagination
+   swap content instantly instead of re-staging every row. Whatever happens —
+   a failed fetch, a rejected request, missing motion support — the shell is
+   revealed. */
+function isBooting() {
+  return !!shell && shell.classList.contains('home-boot');
+}
+
+function clearBootWindow() {
+  if (bootTimer !== null) {
+    clearTimeout(bootTimer);
+    bootTimer = null;
+  }
+  if (shell) {
+    shell.classList.remove('home-boot');
+    shell.classList.add('home-ready');
+  }
+}
+
+function settleShell() {
+  if (bootSettled || !shell) {
+    return;
+  }
+  bootSettled = true;
+  clearBootWindow();
+  window.setTimeout(() => {
+    shell.classList.add('is-steady');
+    document.documentElement.classList.remove('is-first-paint');
+  }, 160);
+}
+
+function startBootWindow(visibleItemCount) {
+  if (!shell) {
+    document.documentElement.classList.remove('is-first-paint');
+    return;
+  }
+
+  // Only the first content render schedules the reveal. Re-arming on every
+  // later render would let sustained typing keep the page hidden.
+  if (bootWindowArmed) {
+    return;
+  }
+  bootWindowArmed = true;
+
+  const count = Number.isFinite(visibleItemCount) ? visibleItemCount : 0;
+  const stagger = Math.min(Math.max(count, 0), MOTION_STAGGER_CAP) * MOTION_STAGGER_MS;
+  bootTimer = window.setTimeout(settleShell, MOTION_BASE_MS + MOTION_ENTER_MS + stagger + 90);
+}
+
+function armBoot() {
+  if (!shell) {
+    document.documentElement.classList.remove('is-first-paint');
+    return;
+  }
+
+  if (prefersReducedMotion()) {
+    settleShell();
+    return;
+  }
+
+  shell.classList.add('home-boot');
+  bootTimer = window.setTimeout(settleShell, 2400);
+}
+
+if (shell) {
+  armBoot();
+  if (document.readyState === 'complete') {
+    settleShell();
+  }
+} else {
+  document.documentElement.classList.remove('is-first-paint');
+}
 
 function escapeHtml(value) {
   return String(value || '')
@@ -183,10 +276,15 @@ let itemsForCurrentView = [];
 
 function renderDesktopItems(items) {
   itemsForCurrentView = items || [];
+  const booting = isBooting();
 
   if (!items || items.length === 0) {
     desktopGrid.innerHTML = '<div class="empty-state">当前目录为空</div>';
     renderPagination(0);
+    if (booting) {
+      startBootWindow(0);
+    }
+    desktopGrid.setAttribute('aria-busy', 'false');
     return;
   }
 
@@ -197,7 +295,7 @@ function renderDesktopItems(items) {
   desktopGrid.innerHTML = pageItems
     .map((item, index) => {
       const sizeText = item.size ? String(item.size) : item.is_dir ? '目录' : '未知大小';
-      const animationIndex = Math.min(index, 12);
+      const animationIndex = Math.min(index, MOTION_STAGGER_CAP);
 
       return `
         <div class="desktop-item ${item.is_dir ? 'is-folder' : 'is-file'}" data-item-id="${escapeHtml(item.id)}" style="--item-index: ${animationIndex};" title="${escapeHtml(item.name || '未命名文件')}">
@@ -214,6 +312,12 @@ function renderDesktopItems(items) {
     })
     .join('');
   renderPagination(totalPages);
+
+  if (booting) {
+    startBootWindow(pageItems.length);
+  }
+
+  desktopGrid.setAttribute('aria-busy', 'false');
 
   desktopGrid.querySelectorAll('.desktop-item').forEach((node) => {
     node.addEventListener('click', () => {
@@ -334,17 +438,19 @@ function renderThankYouList() {
   const pageLinks = links.slice((thankYouPage - 1) * THANK_YOU_PAGE_SIZE, thankYouPage * THANK_YOU_PAGE_SIZE);
 
   thankYouList.innerHTML = pageLinks
-    .map((item) => {
+    .map((item, index) => {
+      const style = ` style="--item-index: ${index};"`;
+
       if (item.url) {
         return `
-          <a class="thank-you-item" href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">
+          <a class="thank-you-item" href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer"${style}>
             ${escapeHtml(item.label)}
           </a>
         `;
       }
 
       return `
-        <div class="thank-you-item">
+        <div class="thank-you-item"${style}>
           ${escapeHtml(item.label)}
         </div>
       `;
@@ -380,9 +486,15 @@ function openThankYouModal() {
     return;
   }
 
+  if (closeTimer !== null) {
+    clearTimeout(closeTimer);
+    closeTimer = null;
+  }
+
   thankYouPage = 1;
   renderThankYouList();
   thankYouModal.classList.remove('is-opening');
+  thankYouModal.classList.remove('is-closing');
   thankYouModal.classList.remove('hidden');
   thankYouModal.setAttribute('aria-hidden', 'false');
   void thankYouModal.offsetWidth;
@@ -392,12 +504,29 @@ function openThankYouModal() {
 }
 
 function closeThankYouModal() {
-  if (!thankYouModal) {
+  if (!thankYouModal || thankYouModal.classList.contains('hidden')) {
     return;
   }
 
+  if (prefersReducedMotion()) {
+    hideThankYouModal();
+    return;
+  }
+
+  thankYouModal.classList.remove('is-opening');
+  thankYouModal.classList.add('is-closing');
+  thankYouModal.setAttribute('aria-hidden', 'true');
+  closeTimer = window.setTimeout(hideThankYouModal, 190);
+}
+
+function hideThankYouModal() {
+  if (closeTimer !== null) {
+    clearTimeout(closeTimer);
+    closeTimer = null;
+  }
   thankYouModal.classList.add('hidden');
   thankYouModal.classList.remove('is-opening');
+  thankYouModal.classList.remove('is-closing');
   thankYouModal.setAttribute('aria-hidden', 'true');
 }
 

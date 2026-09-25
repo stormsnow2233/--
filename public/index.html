@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="is-first-paint">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,6 +9,19 @@
     <title>网盘资源库</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="/styles.css" />
+    <noscript>
+      <style>
+        /* Without scripting nothing lifts the first-paint gate. */
+        html.is-first-paint body:has(.openlist-shell) .openlist-shell {
+          opacity: 1 !important;
+          pointer-events: auto !important;
+          animation: none !important;
+        }
+        html.is-first-paint body:has(.openlist-shell)::before {
+          opacity: 1 !important;
+        }
+      </style>
+    </noscript>
   </head>
   <body>
     <main class="openlist-shell">
@@ -43,7 +56,7 @@
             <div class="col-size">大小</div>
             <div class="col-date">修改时间</div>
           </div>
-          <div id="desktopGrid" class="desktop-grid" aria-live="polite"></div>
+          <div id="desktopGrid" class="desktop-grid" aria-live="polite" aria-busy="true"></div>
           <div id="pagination" class="pagination" aria-label="资源分页"></div>
         </section>
       </div>
