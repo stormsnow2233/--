@@ -58,14 +58,10 @@ function parseThankYouText(rawText) {
   return lines
     .map((line) => {
       const separatorIndex = line.indexOf('|');
-      if (separatorIndex === -1) {
-        return null;
-      }
+      const label = (separatorIndex === -1 ? line : line.slice(0, separatorIndex)).trim();
+      const url = separatorIndex === -1 ? '' : line.slice(separatorIndex + 1).trim();
 
-      const label = line.slice(0, separatorIndex).trim();
-      const url = line.slice(separatorIndex + 1).trim();
-
-      if (!label || !url) {
+      if (!label) {
         return null;
       }
 
@@ -83,7 +79,7 @@ function loadThankYouEditor() {
     const raw = localStorage.getItem('thank_you_links');
     const links = raw ? JSON.parse(raw) : [];
     thankYouEditor.value = Array.isArray(links)
-      ? links.map((item) => `${item.label || ''} | ${item.url || ''}`).filter((line) => line.includes('|')).join('\n')
+      ? links.map((item) => item.label || '').filter(Boolean).join('\n')
       : '';
   } catch (error) {
     thankYouEditor.value = '';

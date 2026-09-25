@@ -252,7 +252,7 @@ function getThankYouLinks() {
     }
 
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter((item) => item && item.label && item.url) : [];
+    return Array.isArray(parsed) ? parsed.filter((item) => item && item.label) : [];
   } catch (error) {
     return [];
   }
