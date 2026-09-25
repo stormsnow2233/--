@@ -30,9 +30,15 @@ function readImportedItems() {
 
   try {
     const content = fs.readFileSync(importedItemsFile, 'utf-8');
-    const parsed = JSON.parse(content);
+    // A UTF-8 BOM (Windows 记事本 / PowerShell 5 的 Set-Content -Encoding UTF8 默认都会写)
+    // makes JSON.parse throw. Silently returning [] here would make the whole
+    // web disk look empty with no explanation, so strip it first.
+    const parsed = JSON.parse(content.replace(/^\uFEFF/, ''));
     return Array.isArray(parsed) ? parsed.map(normalizeItem) : [];
   } catch (error) {
+    // Still fail soft (a broken file must not take the site down), but say so
+    // instead of pretending there is simply no data.
+    console.warn(`[web-disk] 读取 ${path.basename(importedItemsFile)} 失败，按空列表处理：${error.message}`);
     return [];
   }
 }
@@ -105,7 +111,52 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+
+/* Asset versioning.
+   Headers alone are not enough on phones: some mobile and in-app browsers
+   (微信 / QQ / UC 等) keep their own copy of an asset referenced by a bare URL
+   and never revalidate it, so the page keeps rendering an old stylesheet even
+   though the server says no-store. Stamping the mtime onto the asset URL makes
+   the URL itself change whenever the file does, which defeats that cache. */
+function fileVersion(relativePath) {
+  try {
+    const full = path.join(__dirname, 'public', relativePath);
+    return String(Math.trunc(fs.statSync(full).mtimeMs));
+  } catch (error) {
+    return String(Date.now());
+  }
+}
+
+function renderHtmlWithVersions(html) {
+  const versions = {
+    '/styles.css': fileVersion('styles.css'),
+    '/app.js': fileVersion('app.js'),
+    '/admin.js': fileVersion('admin.js'),
+    '/parser.js': fileVersion('parser.js'),
+  };
+
+  return html.replace(
+    /(href|src)="(\/(?:styles\.css|app\.js|admin\.js|parser\.js))"/g,
+    (match, attr, url) => `${attr}="${url}?v=${versions[url]}"`
+  );
+}
+
+function sendVersionedHtml(res, filename) {
+  try {
+    const html = renderHtmlWithVersions(fs.readFileSync(path.join(__dirname, 'public', filename), 'utf-8'));
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
+  } catch (error) {
+    res.status(500).send('页面读取失败');
+  }
+}
+
+// Registered before the static middleware, and static is told not to serve
+// index.html itself, so these versioned routes are the ones that win.
+app.get(['/', '/index.html'], (req, res) => sendVersionedHtml(res, 'index.html'));
+app.get(['/admin', '/admin.html'], (req, res) => sendVersionedHtml(res, 'admin.html'));
+
+app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
@@ -265,10 +316,8 @@ app.delete('/api/items/:id', (req, res) => {
   res.json({ success: true, removed: [...removeIds], message: '删除成功' });
 });
 
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
-});
-
+/* SPA fallback for any other path. The versioned / and /admin routes above
+   already handled those two, so this stays a plain sendFile. */
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });

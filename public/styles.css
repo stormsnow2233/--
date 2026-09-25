@@ -870,14 +870,17 @@ body {
     min-height: 210px;
   }
 
-  .desktop-grid {
+  /* Phone layout follows the view switcher instead of always forcing a grid.
+     Previously the 2-column grid was unconditional here, so the list/grid
+     toggle did nothing on a phone while still claiming "list" was active. */
+  .list-panel.grid-mode .desktop-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
     padding: 14px;
   }
 
-  .desktop-item {
+  .list-panel.grid-mode .desktop-item {
     display: flex;
     min-height: 150px;
     padding: 28px 16px 18px;
@@ -886,22 +889,22 @@ body {
     flex-direction: column;
     justify-content: space-between;
     align-items: flex-start;
-    background: #fff;
+    background: var(--mo-card, #fff);
     box-shadow: 0 5px 16px rgba(37, 47, 64, 0.08);
   }
 
-  .item-main {
+  .list-panel.grid-mode .item-main {
     width: 100%;
     display: block;
   }
 
-  .file-type-icon {
+  .list-panel.grid-mode .file-type-icon {
     width: 52px;
     height: 52px;
     margin-bottom: 18px;
   }
 
-  .file-type-icon i {
+  .list-panel.grid-mode .file-type-icon i {
     font-size: 48px;
   }
 
@@ -909,19 +912,52 @@ body {
     font-size: 14px;
   }
 
-  .list-size,
-  .list-date {
+  /* List mode on a phone: a real compact row. */
+  .list-panel:not(.grid-mode) .desktop-item {
+    display: flex;
+    align-items: center;
+    min-height: 52px;
+    padding: 10px 12px;
+  }
+
+  .list-panel:not(.grid-mode) .desktop-item {
+    grid-template-columns: none;
+  }
+
+  .list-panel:not(.grid-mode) .item-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    width: auto;
+  }
+
+  .list-panel:not(.grid-mode) .file-type-icon {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 0;
+  }
+
+  .list-panel:not(.grid-mode) .file-type-icon i {
+    font-size: 17px;
+  }
+
+  .list-panel:not(.grid-mode) .list-size,
+  .list-panel:not(.grid-mode) .list-date {
+    display: none;
+  }
+
+  /* In list mode the grid wrapper must stop being a grid. */
+  .list-panel:not(.grid-mode) .desktop-grid {
     display: block;
-    text-align: left;
-    font-size: 11px;
+    padding: 0;
+    gap: 0;
   }
 
-  .list-size::before {
-    content: '大小：';
-  }
-
-  .list-date::before {
-    content: '修改：';
+  /* Must out-specify the home layer's `body:has(.openlist-shell) .list-size`
+     rule above, which would otherwise still open the size/date lines. */
+  body:has(.openlist-shell) .list-panel:not(.grid-mode) .desktop-item .list-size,
+  body:has(.openlist-shell) .list-panel:not(.grid-mode) .desktop-item .list-date {
+    display: none !important;
   }
 
   .pagination {
@@ -1646,9 +1682,11 @@ body:has(.openlist-shell) .list-panel.grid-mode .list-size::before {
   content: '大小：';
 }
 
+/* Scoped to grid mode: the earlier unconditional `!important` here forced the
+   size/date rows open in list mode on a phone as well. */
 @media (max-width: 700px) {
-  body:has(.openlist-shell) .desktop-item .list-size,
-  body:has(.openlist-shell) .desktop-item .list-date {
+  body:has(.openlist-shell) .list-panel.grid-mode .desktop-item .list-size,
+  body:has(.openlist-shell) .list-panel.grid-mode .desktop-item .list-date {
     display: block !important;
   }
 }
@@ -1671,46 +1709,9 @@ body:has(.openlist-shell)::before {
   z-index: -1;
 }
 
-.header-tools {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.announcement-button {
-  position: relative;
-  width: 38px;
-  height: 38px;
-  border: 0;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.58);
-  color: #596273;
-  font-size: 15px;
-  box-shadow: 0 5px 16px rgba(37, 47, 64, 0.08);
-  transition: transform 0.25s ease, color 0.25s ease, background 0.25s ease;
-  animation: announcementPulse 3.2s ease-in-out 1.2s infinite;
-}
-
-.announcement-button:hover {
-  color: #1688ee;
-  background: #e0efff;
-  transform: translateY(-3px) rotate(-4deg);
-}
-
-.announcement-button:active {
-  transform: scale(0.9);
-}
-
-.announcement-dot {
-  position: absolute;
-  top: 7px;
-  right: 7px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #ff6d6d;
-  box-shadow: 0 0 0 3px rgba(255, 109, 109, 0.16);
-}
+/* `.header-tools` / `.announcement-button` / `.announcement-dot` and their
+   pulse keyframes were removed: no markup ever used them. The announcement is
+   auto-shown, so a separate bell button had nothing to do. */
 
 .announcement-modal {
   position: fixed;
@@ -1856,12 +1857,6 @@ body:has(.openlist-shell)::before {
   font-size: 12px;
 }
 
-.announcement-footer {
-  padding: 10px 20px 16px;
-  color: #9aa3b0;
-  font-size: 11px;
-}
-
 @keyframes atmosphereDrift {
   from { transform: translate3d(-2.5%, -1.5%, 0) scale(0.99); }
   to { transform: translate3d(2.5%, 1.75%, 0) scale(1.07); }
@@ -1872,12 +1867,6 @@ body:has(.openlist-shell)::before {
 @keyframes atmosphereBreathe {
   0%, 100% { opacity: 0.66; }
   50% { opacity: 1; }
-}
-
-@keyframes announcementPulse {
-  0%, 72%, 100% { box-shadow: 0 5px 16px rgba(37, 47, 64, 0.08); }
-  78% { box-shadow: 0 0 0 7px rgba(22, 141, 242, 0.08), 0 8px 20px rgba(37, 47, 64, 0.12); }
-  86% { box-shadow: 0 0 0 2px rgba(22, 141, 242, 0.04), 0 5px 16px rgba(37, 47, 64, 0.08); }
 }
 
 @keyframes announcementIn {
@@ -1895,7 +1884,6 @@ body:has(.openlist-shell)::before {
 
 @media (prefers-reduced-motion: reduce) {
   body:has(.openlist-shell)::before,
-  .announcement-button,
   .announcement-panel {
     animation: none !important;
   }
