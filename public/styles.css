@@ -659,12 +659,18 @@ body {
   display: none;
 }
 
+/* Frosted content surface: the forest photo stays legible behind the UI while
+   the blur keeps text crisp. Rows and the header stay fully transparent so they
+   inherit this one surface instead of stacking their own white on top of it —
+   stacking would make the header visibly lighter than the rows. */
 .list-panel {
   margin: 0;
   border: 0;
   border-radius: 14px;
-  background: #fff;
-  box-shadow: 0 10px 22px rgba(37, 47, 64, 0.1);
+  background: var(--mo-surface);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  box-shadow: 0 10px 30px -8px rgba(37, 47, 64, 0.22);
   overflow: hidden;
 }
 
@@ -676,7 +682,7 @@ body {
 
 .list-header {
   padding: 14px 15px;
-  background: #fff;
+  background: transparent;
   color: #657080;
   font-size: 12px;
   letter-spacing: 0;
@@ -756,7 +762,9 @@ body {
   padding: 22px 18px;
   border: 0;
   border-radius: 12px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   box-shadow: 0 5px 16px rgba(37, 47, 64, 0.08);
   flex-direction: column;
   align-items: flex-start;
@@ -1632,8 +1640,8 @@ body:has(.openlist-shell)::before {
      animation you can catch repeating. Gemini keeps its ambient motion in the
      tens of seconds for the same reason. */
   animation:
-    atmosphereDrift 19s ease-in-out infinite alternate,
-    atmosphereBreathe 13s ease-in-out infinite;
+    atmosphereDrift 26s ease-in-out infinite alternate,
+    atmosphereBreathe 18s ease-in-out infinite;
   z-index: -1;
 }
 
@@ -1821,14 +1829,14 @@ body:has(.openlist-shell)::before {
 }
 
 @keyframes atmosphereDrift {
-  from { transform: translate3d(-3.5%, -2%, 0) scale(0.98); }
-  to { transform: translate3d(3.5%, 2.5%, 0) scale(1.12); }
+  from { transform: translate3d(-2.5%, -1.5%, 0) scale(0.99); }
+  to { transform: translate3d(2.5%, 1.75%, 0) scale(1.07); }
 }
 
 /* Runs on a different period than the drift so the two never phase back into an
    obvious, catchable loop. */
 @keyframes atmosphereBreathe {
-  0%, 100% { opacity: 0.55; }
+  0%, 100% { opacity: 0.66; }
   50% { opacity: 1; }
 }
 
@@ -1897,7 +1905,15 @@ body:has(.openlist-shell) {
      for things the user just touched, so the page feels responsive rather than
      inert without turning every hover into a bounce. */
   --mo-ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --mo-stagger: 0.055s;
+  /* Stagger, surfaces and shadows are declared at the end of this block. */
+  --mo-surface: rgba(255, 255, 255, 0.68);
+  --mo-surface-blur: blur(16px) saturate(150%);
+  --mo-row-hover: #e9f2ff;
+  --mo-row-active: #d9e8ff;
+  --mo-card: rgba(255, 255, 255, 0.5);
+  --mo-card-hover: #eff6ff;
+  --mo-card-active: #e2eeff;
+  --mo-stagger: 0.042s;
   /* Heavy, layered shadows — weight is what makes an interaction feel like it
      has force; a 1px lift with a faint shadow never will. */
   --mo-lift-row: 0 10px 24px -6px rgba(42, 109, 246, 0.28);
@@ -2036,13 +2052,13 @@ body:has(.openlist-shell) .icon-action {
 
 body:has(.openlist-shell) .view-button:hover,
 body:has(.openlist-shell) .icon-action:hover {
-  transform: translateY(-3px) scale(1.12);
+  transform: translateY(-2px) scale(1.08);
   box-shadow: var(--mo-lift-btn);
 }
 
 body:has(.openlist-shell) .view-button:active,
 body:has(.openlist-shell) .icon-action:active {
-  transform: translateY(1px) scale(0.9);
+  transform: translateY(0) scale(0.94);
   transition-duration: var(--mo-instant);
 }
 
@@ -2064,12 +2080,12 @@ body:has(.openlist-shell) .breadcrumb-item {
 }
 
 body:has(.openlist-shell) .breadcrumb-item:hover {
-  transform: translateY(-2px) scale(1.06);
+  transform: translateY(-1px) scale(1.04);
   box-shadow: 0 6px 14px -4px rgba(22, 141, 242, 0.36);
 }
 
 body:has(.openlist-shell) .breadcrumb-item:active {
-  transform: translateY(0) scale(0.92);
+  transform: translateY(0) scale(0.95);
   transition-duration: var(--mo-instant);
 }
 
@@ -2137,8 +2153,8 @@ body:has(.openlist-shell) .desktop-item {
 }
 
 body:has(.openlist-shell) .desktop-item:hover {
-  background: #eef5ff;
-  transform: translateX(5px);
+  background: var(--mo-row-hover);
+  transform: translateX(4px);
   box-shadow: var(--mo-lift-row);
 }
 
@@ -2149,16 +2165,16 @@ body:has(.openlist-shell) .file-type-icon {
 }
 
 body:has(.openlist-shell) .desktop-item:hover .file-type-icon {
-  transform: scale(1.2);
+  transform: scale(1.09);
 }
 
 body:has(.openlist-shell) .desktop-item:active {
-  background: #e3eeff;
-  transform: translateX(2px) scale(0.995);
+  background: var(--mo-row-active);
+  transform: translateX(1px) scale(0.997);
 }
 
 body:has(.openlist-shell) .desktop-item:active .file-type-icon {
-  transform: scale(0.92);
+  transform: scale(0.94);
 }
 
 body:has(.openlist-shell) .desktop-name {
@@ -2180,13 +2196,13 @@ body:has(.openlist-shell) .list-panel.grid-mode .desktop-item {
 }
 
 body:has(.openlist-shell) .list-panel.grid-mode .desktop-item:hover {
-  transform: translateY(-8px);
+  transform: translateY(-6px);
   background: #fff;
   box-shadow: var(--mo-lift-card);
 }
 
 body:has(.openlist-shell) .list-panel.grid-mode .desktop-item:active {
-  transform: translateY(-2px) scale(0.975);
+  transform: translateY(-2px) scale(0.985);
 }
 
 /* ---------- pagination ---------- */
@@ -2203,12 +2219,12 @@ body:has(.openlist-shell) .page-button {
 }
 
 body:has(.openlist-shell) .page-button:hover:not(:disabled) {
-  transform: translateY(-3px) scale(1.08);
+  transform: translateY(-2px) scale(1.05);
   box-shadow: 0 8px 16px -6px rgba(22, 141, 242, 0.42);
 }
 
 body:has(.openlist-shell) .page-button:active:not(:disabled) {
-  transform: translateY(0) scale(0.9);
+  transform: translateY(0) scale(0.94);
   transition-duration: var(--mo-instant);
 }
 
@@ -2221,13 +2237,13 @@ body:has(.openlist-shell) .thank-you-footer .thank-you-link {
 }
 
 body:has(.openlist-shell) .thank-you-footer .thank-you-link:hover {
-  transform: translateY(-5px) scale(1.07);
+  transform: translateY(-3px) scale(1.05);
   background: rgba(255, 255, 255, 0.32);
   box-shadow: 0 22px 40px -10px rgba(0, 0, 0, 0.34);
 }
 
 body:has(.openlist-shell) .thank-you-footer .thank-you-link:active {
-  transform: translateY(-1px) scale(0.97);
+  transform: translateY(-1px) scale(0.98);
   transition-duration: var(--mo-instant);
 }
 
@@ -2240,33 +2256,33 @@ body:has(.openlist-shell) :is(button, a, input):focus-visible {
 
 /* ---------- keyframes ---------- */
 @keyframes homeShellIn {
-  from { opacity: 0; transform: translateY(18px) scale(0.965); }
+  from { opacity: 0; transform: translateY(12px) scale(0.982); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes homeHeaderIn {
-  from { opacity: 0; transform: translateY(-22px); }
+  from { opacity: 0; transform: translateY(-14px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes homeBrandIn {
-  0% { opacity: 0; transform: rotate(-150deg) scale(0.35); }
+  0% { opacity: 0; transform: rotate(-105deg) scale(0.55); }
   60% { opacity: 1; }
   100% { opacity: 1; transform: rotate(-15deg) scale(1); }
 }
 
 @keyframes homeToolIn {
-  from { opacity: 0; transform: translateY(-14px) scale(0.86); }
+  from { opacity: 0; transform: translateY(-10px) scale(0.91); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes homeRiseIn {
-  from { opacity: 0; transform: translateY(24px); }
+  from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes homeRiseSoftIn {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(14px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -2276,25 +2292,25 @@ body:has(.openlist-shell) :is(button, a, input):focus-visible {
 }
 
 @keyframes homePanelIn {
-  from { opacity: 0; transform: translateY(26px) scale(0.968); }
+  from { opacity: 0; transform: translateY(18px) scale(0.984); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes homeItemIn {
-  from { opacity: 0; transform: translateY(22px) scale(0.978); }
+  from { opacity: 0; transform: translateY(15px) scale(0.99); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes homeBrandFloat {
   0%, 100% { transform: rotate(-15deg) translateY(0); }
-  50% { transform: rotate(-15deg) translateY(-6px); }
+  50% { transform: rotate(-15deg) translateY(-4px); }
 }
 
 /* The logo halo breathes on its own, the way Gemini's .lm-glow blooms to
    opacity 0.5 and back rather than snapping in. */
 @keyframes homeGlowBreathe {
-  0%, 100% { opacity: 0.14; transform: scale(0.82); }
-  50% { opacity: 0.62; transform: scale(1.16); }
+  0%, 100% { opacity: 0.2; transform: scale(0.9); }
+  50% { opacity: 0.46; transform: scale(1.08); }
 }
 
 /* ---------- thank-you modal ---------- */
@@ -2360,12 +2376,12 @@ body:has(.openlist-shell) .thank-you-modal.is-closing .thank-you-modal-panel {
 }
 
 @keyframes thankYouHeaderIn {
-  from { opacity: 0; transform: translateY(-8px); }
+  from { opacity: 0; transform: translateY(-6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes thankYouItemIn {
-  from { opacity: 0; transform: translateY(24px); }
+  from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
