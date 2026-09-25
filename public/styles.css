@@ -497,6 +497,40 @@ button {
   text-align: center;
 }
 
+.thank-you-pagination {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 14px;
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.thank-you-pagination.visible {
+  display: flex;
+}
+
+.thank-you-page-button {
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(42, 109, 246, 0.12);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--primary);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.thank-you-page-button:hover:not(:disabled) {
+  background: #e8f3ff;
+  transform: translateY(-2px);
+}
+
+.thank-you-page-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
 /* Compact OpenList-style public file browser. */
 body {
   background: #f7f8fa;

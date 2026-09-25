@@ -7,6 +7,7 @@ const folderBreadcrumb = document.getElementById('folderBreadcrumb');
 const thankYouButton = document.getElementById('openThankYouList');
 const thankYouModal = document.getElementById('thankYouModal');
 const thankYouList = document.getElementById('thankYouList');
+const thankYouPagination = document.getElementById('thankYouPagination');
 const closeThankYouModalBtn = document.getElementById('closeThankYouModal');
 const viewButtons = document.querySelectorAll('.view-button');
 const listPanel = document.querySelector('.list-panel');
@@ -28,6 +29,8 @@ let allItems = [];
 let currentFolderId = 0;
 let currentPage = 1;
 const PAGE_SIZE = 13;
+let thankYouPage = 1;
+const THANK_YOU_PAGE_SIZE = 7;
 
 function escapeHtml(value) {
   return String(value || '')
@@ -319,10 +322,18 @@ function renderThankYouList() {
 
   if (!links.length) {
     thankYouList.innerHTML = '<p class="thank-you-empty">还没有设置感谢名单</p>';
+    if (thankYouPagination) {
+      thankYouPagination.innerHTML = '';
+      thankYouPagination.classList.remove('visible');
+    }
     return;
   }
 
-  thankYouList.innerHTML = links
+  const totalPages = Math.ceil(links.length / THANK_YOU_PAGE_SIZE);
+  thankYouPage = Math.min(Math.max(thankYouPage, 1), totalPages);
+  const pageLinks = links.slice((thankYouPage - 1) * THANK_YOU_PAGE_SIZE, thankYouPage * THANK_YOU_PAGE_SIZE);
+
+  thankYouList.innerHTML = pageLinks
     .map((item) => {
       if (item.url) {
         return `
@@ -339,6 +350,29 @@ function renderThankYouList() {
       `;
     })
     .join('');
+
+  if (!thankYouPagination) {
+    return;
+  }
+
+  if (totalPages <= 1) {
+    thankYouPagination.innerHTML = '';
+    thankYouPagination.classList.remove('visible');
+    return;
+  }
+
+  thankYouPagination.innerHTML = `
+    <button type="button" class="thank-you-page-button" data-thank-you-page="${thankYouPage - 1}" ${thankYouPage === 1 ? 'disabled' : ''} aria-label="上一页"><i class="fa-solid fa-chevron-left"></i></button>
+    <span>${thankYouPage} / ${totalPages}</span>
+    <button type="button" class="thank-you-page-button" data-thank-you-page="${thankYouPage + 1}" ${thankYouPage === totalPages ? 'disabled' : ''} aria-label="下一页"><i class="fa-solid fa-chevron-right"></i></button>
+  `;
+  thankYouPagination.classList.add('visible');
+  thankYouPagination.querySelectorAll('[data-thank-you-page]:not([disabled])').forEach((button) => {
+    button.addEventListener('click', () => {
+      thankYouPage = Number(button.dataset.thankYouPage);
+      renderThankYouList();
+    });
+  });
 }
 
 function openThankYouModal() {
@@ -346,6 +380,7 @@ function openThankYouModal() {
     return;
   }
 
+  thankYouPage = 1;
   renderThankYouList();
   thankYouModal.classList.remove('is-opening');
   thankYouModal.classList.remove('hidden');
