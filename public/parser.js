@@ -91,9 +91,53 @@ function extractCode(text, drive) {
   return bare ? bare[1] : '';
 }
 
-function extractSize(text) {
-  const match = String(text || '').match(/(\d+(?:\.\d+)?\s*(?:GB|MB|KB|TB|G|M|K|T))/i);
-  return match ? match[0].replace(/\s+/g, '').toUpperCase() : '';
+/* Last-resort name when the paste carried no usable title (a bare cloud link
+   usually has none). Keeps the URL path tail when it is informative, otherwise
+   falls back to the drive name so the row reads "Google Drive 资源" rather than
+   a meaningless shared default. */
+const GENERIC_PATH_SEGMENTS = new Set([
+  'view', 'edit', 'preview', 'share', 'sharing', 'file', 'files', 'folder', 'folders',
+  'drive', 's', 'u', 't', 'd', 'f', 'index.html', 'home', 'open', 'download',
+]);
+
+function deriveNameFromUrl(url, drive) {
+  const generic = (drive && drive.label ? `${drive.label} 资源` : '分享资源');
+
+  let pathname = '';
+  try {
+    pathname = new URL(url).pathname;
+  } catch (error) {
+    return generic;
+  }
+
+  const segments = pathname
+    .split('/')
+    .map((part) => {
+      try {
+        return decodeURIComponent(part).trim();
+      } catch (error) {
+        return part.trim();
+      }
+    })
+    .filter(Boolean);
+
+  // Walk from the end for the first segment that looks like a real name.
+  for (let i = segments.length - 1; i >= 0; i -= 1) {
+    const segment = segments[i];
+    if (GENERIC_PATH_SEGMENTS.has(segment.toLowerCase())) {
+      continue;
+    }
+    if (segment.length < 3) {
+      continue;
+    }
+    // Long opaque ids (Google Drive file ids and friends) are not names.
+    if (/^[A-Za-z0-9_-]{20,}$/.test(segment) && !/\.[a-z0-9]{2,5}$/i.test(segment)) {
+      continue;
+    }
+    return segment.length > 80 ? segment.slice(0, 80) : segment;
+  }
+
+  return generic;
 }
 
 function extractName(prevBlock, postBlock) {
@@ -116,6 +160,23 @@ function extractName(prevBlock, postBlock) {
   return cleaned;
 }
 
+/* Pull a size out of the prose around a link.
+   Two guards against false positives, both learned the hard way:
+   - the unit must be 2+ chars or a lone G/M, so a lowercase "t" in a file id
+     (…v140T1PVDuAD…) is not read as "0T"
+   - the number must not be glued to a preceding alphanumeric, so digits inside
+     a URL (…1PVDuAD…) cannot start a match
+   Result: "15MB", "1.2 GB" match; "0T" inside an id does not. */
+function extractSize(text) {
+  const match = String(text || '').match(
+    /(?<![a-zA-Z0-9])(\d+(?:\.\d+)?)\s*(GB|MB|KB|TB|G|M|T)(?![a-zA-Z])/i
+  );
+  if (!match) {
+    return '';
+  }
+  return `${match[1]}${match[2].toUpperCase()}`;
+}
+
 /* Parse one pipe/tab delimited row: name | url | pwd | size */
 function parseDelimitedLine(line) {
   const delimiter = line.includes('|') ? '|' : '\t';
@@ -123,7 +184,7 @@ function parseDelimitedLine(line) {
   const url = cleanUrl(parts[1] || '');
   const drive = detectDrive(url);
   return {
-    name: parts[0] || '未命名文件',
+    name: parts[0] || deriveNameFromUrl(url, drive) || '未命名文件',
     url,
     pwd: parts[2] || '',
     size: parts[3] || '',
@@ -149,8 +210,10 @@ function parseProseBlock(block, absoluteOffset) {
     const prevBlock = block.slice(Math.max(0, startIndex - 100), startIndex);
     const postBlock = block.slice(startIndex, endIndex);
 
+    const name = extractName(prevBlock, postBlock) || deriveNameFromUrl(url, drive);
+
     results.push({
-      name: extractName(prevBlock, postBlock) || '新分享资源',
+      name: name || '新分享资源',
       url,
       pwd: extractCode(postBlock, drive),
       size: extractSize(postBlock),
