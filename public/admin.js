@@ -1,4 +1,5 @@
 const importInput = document.getElementById('importInput');
+const adminSecretInput = document.getElementById('adminSecretInput');
 const parseBtn = document.getElementById('parseBtn');
 const submitBatchBtn = document.getElementById('submitBatchBtn');
 const batchMessageBox = document.getElementById('batchMessage');
@@ -7,6 +8,23 @@ const previewWrap = document.getElementById('previewWrap');
 const importedList = document.getElementById('importedList');
 
 let parsedItems = [];
+
+function getAdminSecret() {
+  const savedSecret = localStorage.getItem('admin_key');
+  if (savedSecret) {
+    adminSecretInput.value = savedSecret;
+    return savedSecret;
+  }
+
+  const promptValue = window.prompt('请输入管理密钥：');
+  if (!promptValue) {
+    return '';
+  }
+
+  localStorage.setItem('admin_key', promptValue);
+  adminSecretInput.value = promptValue;
+  return promptValue;
+}
 
 function showMessage(text, type = 'success') {
   batchMessageBox.textContent = text;
@@ -113,6 +131,12 @@ async function submitBatchImport() {
     return;
   }
 
+  const adminSecret = getAdminSecret();
+  if (!adminSecret) {
+    showMessage('管理密钥不能为空。', 'error');
+    return;
+  }
+
   try {
     const response = await fetch('/api/admin', {
       method: 'POST',
@@ -121,6 +145,7 @@ async function submitBatchImport() {
       },
       body: JSON.stringify({
         action: 'batch_import',
+        authKey: adminSecret,
         parent_id: 0,
         items: parsedItems.map((item) => ({
           name: item.name || '未命名文件',
