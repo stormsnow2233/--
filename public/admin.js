@@ -246,16 +246,15 @@ function renderFolderItems() {
           <td>${escapeHtml(detailText)}</td>
           <td>
             <div class="row-actions">
-              ${item.is_dir ? `<button type="button" class="secondary small" data-enter-id="${item.id}">进入</button>` : `<a href="${escapeHtml(item.url || '#')}" target="_blank" rel="noopener noreferrer" class="tiny-link">打开</a>`}
+              ${item.is_dir ? `<button type="button" class="secondary small" data-enter-id="${item.id}">进入</button><button type="button" class="secondary small" data-rename-id="${item.id}">重命名</button>` : `<a href="${escapeHtml(item.url || '#')}" target="_blank" rel="noopener noreferrer" class="tiny-link">打开</a>`}
               <button type="button" class="danger small" data-delete-id="${item.id}">删除</button>
             </div>
             <div class="move-control">
               <label class="move-label">移动到</label>
-              <select class="move-select" data-move-id="${item.id}">
+              <select class="move-select" data-move-id="${item.id}" aria-label="移动 ${escapeHtml(item.name || '资源')} 到">
                 <option value="0">根目录</option>
                 ${buildFolderOptions(item.id)}
               </select>
-              <button type="button" class="secondary small move-confirm" data-move-id="${item.id}">确认</button>
             </div>
           </td>
         </tr>
@@ -291,12 +290,36 @@ function renderFolderItems() {
     });
   });
 
-  folderItemsBody.querySelectorAll('[data-move-id]').forEach((button) => {
+  folderItemsBody.querySelectorAll('[data-rename-id]').forEach((button) => {
     button.addEventListener('click', async () => {
-      const itemId = button.dataset.moveId;
-      const row = button.closest('tr');
-      const select = row ? row.querySelector('.move-select') : null;
-      const targetParent = select ? select.value : '0';
+      const itemId = button.dataset.renameId;
+      const item = allItems.find((entry) => String(entry.id) === String(itemId));
+      const nextName = window.prompt('请输入新的文件夹名称', item?.name || '');
+
+      if (nextName === null || !nextName.trim()) {
+        return;
+      }
+
+      const adminSecret = getAdminSecret();
+      const response = await fetch(`/api/items/${encodeURIComponent(itemId)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: nextName.trim(), authKey: adminSecret }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        showMessage(data.message || '重命名失败', 'error');
+        return;
+      }
+      showMessage('文件夹重命名成功', 'success');
+      await refreshAllData();
+    });
+  });
+
+  folderItemsBody.querySelectorAll('.move-select').forEach((select) => {
+    select.addEventListener('change', async () => {
+      const itemId = select.dataset.moveId;
+      const targetParent = select.value;
       const adminSecret = getAdminSecret();
       const response = await fetch('/api/items/move', {
         method: 'POST',

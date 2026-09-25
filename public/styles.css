@@ -1599,20 +1599,6 @@ input[data-field] {
   box-shadow: 0 0 0 3px rgba(93,127,233,0.12);
 }
 
-.move-confirm {
-  min-width: 64px;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.move-confirm:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 18px rgba(46,110,247,0.14);
-}
-
-.move-confirm:active {
-  transform: translateY(0);
-}
-
 .tiny-link {
   color: #2f6ef7;
   text-decoration: none;
@@ -1962,4 +1948,79 @@ body:has(.admin-shell) {
 
 body:has(.admin-shell) .admin-header {
   color: #1d2433;
+}
+
+/* Thank-you modal entrance motion. */
+body:has(.openlist-shell) .thank-you-modal:not(.hidden) {
+  animation: thankYouBackdropIn 0.28s ease-out both;
+}
+
+body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-modal-panel {
+  animation: thankYouPanelIn 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-modal-header {
+  animation: thankYouHeaderIn 0.35s 0.1s ease-out both;
+}
+
+body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-item,
+body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-empty {
+  animation: thankYouItemIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-item:nth-child(1) { animation-delay: 0.16s; }
+body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-item:nth-child(2) { animation-delay: 0.22s; }
+body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-item:nth-child(3) { animation-delay: 0.28s; }
+body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-item:nth-child(4) { animation-delay: 0.34s; }
+body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-item:nth-child(5) { animation-delay: 0.4s; }
+
+body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-item:hover {
+  transform: translateX(4px);
+}
+
+.thank-you-modal.is-opening {
+  animation: thankYouBackdropIn 0.55s ease-out both;
+}
+
+.thank-you-modal.is-opening .thank-you-modal-panel {
+  animation: thankYouPanelIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.thank-you-modal.is-opening .thank-you-modal-header {
+  animation: thankYouHeaderIn 0.5s 0.12s ease-out both;
+}
+
+.thank-you-modal.is-opening .thank-you-item,
+.thank-you-modal.is-opening .thank-you-empty {
+  animation: thankYouItemIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes thankYouBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes thankYouPanelIn {
+  from { opacity: 0; transform: translateY(30px) scale(0.94); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes thankYouHeaderIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes thankYouItemIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body:has(.openlist-shell) .thank-you-modal:not(.hidden),
+  body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-modal-panel,
+  body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-modal-header,
+  body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-item,
+  body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-empty {
+    animation: none !important;
+  }
 }

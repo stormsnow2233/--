@@ -295,8 +295,13 @@ function openThankYouModal() {
   }
 
   renderThankYouList();
+  thankYouModal.classList.remove('is-opening');
   thankYouModal.classList.remove('hidden');
   thankYouModal.setAttribute('aria-hidden', 'false');
+  void thankYouModal.offsetWidth;
+  requestAnimationFrame(() => {
+    thankYouModal.classList.add('is-opening');
+  });
 }
 
 function closeThankYouModal() {
@@ -305,6 +310,7 @@ function closeThankYouModal() {
   }
 
   thankYouModal.classList.add('hidden');
+  thankYouModal.classList.remove('is-opening');
   thankYouModal.setAttribute('aria-hidden', 'true');
 }
 

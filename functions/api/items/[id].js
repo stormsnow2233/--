@@ -70,3 +70,48 @@ export async function onRequestDelete({ request, env }) {
     );
   }
 }
+
+export async function onRequestPatch({ request, env }) {
+  try {
+    const body = await request.json().catch(() => ({}));
+    const { authKey, name } = body || {};
+
+    if (!authKey || authKey !== (env?.ADMIN_SECRET || ADMIN_SECRET)) {
+      return jsonResponse({ success: false, message: '管理密钥错误' }, 401);
+    }
+
+    const nextName = String(name || '').trim();
+    if (!nextName) {
+      return jsonResponse({ success: false, message: '文件夹名称不能为空' }, 400);
+    }
+
+    const itemId = getItemIdFromUrl(request.url);
+    if (!itemId) {
+      return jsonResponse({ success: false, message: '缺少目标 ID' }, 400);
+    }
+
+    await ensureImportedTable(env);
+    const items = await readImportedItems(env);
+    const target = items.find((item) => String(item.id) === String(itemId));
+
+    if (!target) {
+      return jsonResponse({ success: false, message: '数据不存在' }, 404);
+    }
+
+    if (!target.is_dir) {
+      return jsonResponse({ success: false, message: '只能重命名文件夹' }, 400);
+    }
+
+    await env.DB.prepare('UPDATE imported_items SET name = ? WHERE id = ?').bind(nextName, itemId).run();
+    return jsonResponse({ success: true, message: '文件夹重命名成功', name: nextName });
+  } catch (error) {
+    return jsonResponse(
+      {
+        success: false,
+        message: '重命名失败',
+        error: error instanceof Error ? error.message : String(error),
+      },
+      500
+    );
+  }
+}
