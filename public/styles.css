@@ -1880,6 +1880,290 @@ body:has(.admin-shell) .admin-header {
 }
 
 /* ==========================================================================
+   Admin motion layer.
+   Same grammar as the homepage — Material 3 standard easing, the 83ms press
+   feedback, and 0.15-0.3s interaction transitions — but scoped to
+   body:has(.admin-shell) so neither page can leak into the other. The admin is
+   a dense working surface, so entrances stay short and nothing moves on a loop.
+   ========================================================================== */
+body:has(.admin-shell) {
+  --ad-instant: 83ms;
+  --ad-quick: 0.15s;
+  --ad-base: 0.24s;
+  --ad-enter: 0.34s;
+  --ad-ease: cubic-bezier(0.2, 0, 0, 1);
+  --ad-ease-entrance: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ad-ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ad-lift: 0 18px 36px -14px rgba(31, 51, 92, 0.32);
+  --ad-lift-btn: 0 10px 20px -8px rgba(42, 109, 246, 0.5);
+  /* Panels share one frosted surface so the row states below sit inside it
+     rather than stacking more white on top. */
+  --ad-surface: rgba(255, 255, 255, 0.74);
+  --ad-stagger: 0.035s;
+}
+
+/* ---------- entrance ---------- */
+body:has(.admin-shell) .admin-header {
+  animation: adHeaderIn var(--ad-enter) var(--ad-ease-entrance) both;
+}
+
+/* Direction carries meaning here: the folder tree slides in from the side it
+   lives on, the working panels rise from below. Everything is scoped to the
+   `admin-boot` window that admin.js opens around the first paint, so the table
+   rows it renders do not re-animate when the directory changes later.
+   Each panel rule carries a CSS-only safety reveal: if the main thread stalls
+   long enough that the timer never clears `admin-boot`, the panels still become
+   visible by themselves. Nothing may ever stay at opacity 0. The delays are
+   repeated inside each animation because a single `animation-delay` on the
+   shorthand would apply to the safety reveal too and push it out to 3.x s. */
+.admin-shell.admin-boot .admin-layout > .panel {
+  animation:
+    adPanelSideIn 0.34s cubic-bezier(0.05, 0.7, 0.1, 1) 0.06s both,
+    adSafetyReveal 0.3s ease 3s forwards;
+}
+
+.admin-shell.admin-boot .admin-main > .panel {
+  animation:
+    adPanelIn 0.34s cubic-bezier(0.05, 0.7, 0.1, 1) calc(0.1s + (var(--panel-index, 0) * 0.06s)) both,
+    adSafetyReveal 0.3s ease 3s forwards;
+}
+
+.admin-shell.admin-boot .folder-tree-item {
+  animation: adRowIn var(--ad-base) var(--ad-ease) both;
+  animation-delay: calc(0.14s + (var(--tree-index, 0) * var(--ad-stagger)));
+}
+
+.admin-shell.admin-boot #folderItemsBody tr:not(.empty),
+.admin-shell.admin-boot #importedList tr:not(.empty) {
+  animation: adRowIn var(--ad-base) var(--ad-ease) both;
+  animation-delay: calc(0.16s + (var(--row-index, 0) * var(--ad-stagger)));
+}
+
+@keyframes adSafetyReveal {
+  to { opacity: 1; }
+}
+
+/* ---------- panels ---------- */
+body:has(.admin-shell) .panel {
+  background: var(--ad-surface);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  transition:
+    transform var(--ad-base) var(--ad-ease),
+    box-shadow var(--ad-base) ease,
+    border-color var(--ad-base) ease;
+}
+
+body:has(.admin-shell) .panel:hover {
+  border-color: rgba(255, 255, 255, 0.72);
+  box-shadow: var(--ad-lift);
+}
+
+body:has(.admin-shell) .panel h2 {
+  transition: color var(--ad-quick) ease;
+}
+
+/* ---------- buttons ---------- */
+body:has(.admin-shell) .primary,
+body:has(.admin-shell) .secondary,
+body:has(.admin-shell) .danger {
+  transition:
+    transform var(--ad-quick) var(--ad-ease-pop),
+    background-color var(--ad-quick) ease,
+    color var(--ad-quick) ease,
+    border-color var(--ad-quick) ease,
+    box-shadow var(--ad-quick) ease;
+}
+
+body:has(.admin-shell) .primary:hover,
+body:has(.admin-shell) .secondary:hover,
+body:has(.admin-shell) .danger:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ad-lift-btn);
+}
+
+body:has(.admin-shell) .primary:active,
+body:has(.admin-shell) .secondary:active,
+body:has(.admin-shell) .danger:active {
+  transform: translateY(0) scale(0.96);
+  transition-duration: var(--ad-instant);
+}
+
+/* ---------- the two icon-free link buttons in the header ---------- */
+body:has(.admin-shell) .header-actions button {
+  transition:
+    transform var(--ad-quick) var(--ad-ease-pop),
+    box-shadow var(--ad-quick) ease;
+}
+
+/* ---------- folder tree ---------- */
+body:has(.admin-shell) .folder-tree-item {
+  transition:
+    background-color var(--ad-quick) ease,
+    border-color var(--ad-quick) ease,
+    color var(--ad-quick) ease,
+    transform var(--ad-quick) var(--ad-ease-pop);
+}
+
+body:has(.admin-shell) .folder-tree-item:hover {
+  transform: translateX(3px);
+}
+
+body:has(.admin-shell) .tree-toggle {
+  transition: transform var(--ad-base) var(--ad-ease), color var(--ad-quick) ease;
+}
+
+body:has(.admin-shell) .tree-node.expanded > .tree-row .tree-toggle {
+  transform: rotate(90deg);
+}
+
+body:has(.admin-shell) .folder-breadcrumb {
+  transition:
+    background-color var(--ad-quick) ease,
+    border-color var(--ad-quick) ease,
+    box-shadow var(--ad-quick) ease;
+}
+
+/* ---------- tables ---------- */
+body:has(.admin-shell) th,
+body:has(.admin-shell) td {
+  transition: background-color var(--ad-quick) ease;
+}
+
+body:has(.admin-shell) tbody tr {
+  position: relative;
+  transition: background-color var(--ad-quick) ease;
+}
+
+body:has(.admin-shell) tbody tr:hover {
+  background: #eef5ff;
+}
+
+/* The left-edge indicator is drawn with an inset shadow so the row never
+   reflows when it appears. */
+body:has(.admin-shell) tbody tr:hover td:first-child {
+  box-shadow: inset 3px 0 0 0 var(--primary);
+}
+
+body:has(.admin-shell) tbody td {
+  transition:
+    background-color var(--ad-quick) ease,
+    box-shadow var(--ad-quick) var(--ad-ease);
+}
+
+/* ---------- fields ---------- */
+body:has(.admin-shell) textarea,
+body:has(.admin-shell) input {
+  transition:
+    border-color var(--ad-quick) ease,
+    box-shadow var(--ad-quick) ease,
+    background-color var(--ad-quick) ease;
+}
+
+body:has(.admin-shell) textarea:focus,
+body:has(.admin-shell) input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(42, 109, 246, 0.16);
+}
+
+/* ---------- move control (existing slideIn, retimed to the shared grammar) ---------- */
+body:has(.admin-shell) .move-control {
+  animation: adSlideIn var(--ad-base) var(--ad-ease) both;
+  transition: box-shadow var(--ad-quick) ease, border-color var(--ad-quick) ease;
+}
+
+body:has(.admin-shell) .move-control:focus-within {
+  border-color: #b9cdf7;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 6px 16px -8px rgba(42, 109, 246, 0.4);
+}
+
+/* ---------- preview reveal ---------- */
+body:has(.admin-shell) .preview-box.visible {
+  animation: adPanelIn var(--ad-enter) var(--ad-ease) both;
+  animation-delay: 0s;
+}
+
+/* ---------- messages ---------- */
+body:has(.admin-shell) .message:not(:empty) {
+  animation: adMessageIn var(--ad-base) var(--ad-ease) both;
+}
+
+/* ---------- folder modal ---------- */
+body:has(.admin-shell) .folder-modal.visible {
+  display: flex;
+  animation: adBackdropIn var(--ad-base) ease both;
+}
+
+body:has(.admin-shell) .folder-modal.visible .folder-modal-panel {
+  animation: adModalIn 0.3s var(--ad-ease-pop) both;
+}
+
+/* ---------- focus visibility ---------- */
+body:has(.admin-shell) :is(button, a, input, textarea, select):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ---------- keyframes ---------- */
+@keyframes adHeaderIn {
+  from { opacity: 0; transform: translateY(-14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes adPanelSideIn {
+  from { opacity: 0; transform: translateX(-20px) scale(0.985); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes adRowIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes adPanelIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes adSlideIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes adMessageIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes adBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes adModalIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body:has(.admin-shell) .admin-header,
+  body:has(.admin-shell) .admin-layout > .panel,
+  body:has(.admin-shell) .admin-main > .panel,
+  body:has(.admin-shell) .admin-shell.admin-boot .folder-tree-item,
+  body:has(.admin-shell) .admin-shell.admin-boot #folderItemsBody tr,
+  body:has(.admin-shell) .admin-shell.admin-boot #importedList tr,
+  body:has(.admin-shell) .preview-box.visible,
+  body:has(.admin-shell) .message:not(:empty),
+  body:has(.admin-shell) .move-control,
+  body:has(.admin-shell) .folder-modal.visible,
+  body:has(.admin-shell) .folder-modal.visible .folder-modal-panel {
+    animation: none !important;
+  }
+}
+
+/* ==========================================================================
    Homepage motion layer — single source of truth.
    Everything the public page animates lives in this one section, is scoped to
    body:has(.openlist-shell) so the admin workspace is never touched, and is

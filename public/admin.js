@@ -33,6 +33,29 @@ const DEFAULT_ANNOUNCEMENT = `欢迎来到 **网盘资源库**。
 
 [查看使用说明](https://example.com)`;
 
+/* Entrance choreography.
+   The panels, the folder tree and the first batch of table rows animate in as a
+   staggered group, but only during a short window after first paint. The tree
+   and the table are re-rendered on every directory change, so without this gate
+   they would re-stage themselves each time — the same flicker the public page
+   used to have. CSS does all the animating; this only decides when it is
+   allowed to run. */
+const adminShell = document.querySelector('.admin-shell');
+
+if (adminShell) {
+  document.querySelectorAll('.admin-main > .panel').forEach((panel, index) => {
+    panel.style.setProperty('--panel-index', String(index));
+  });
+
+  const adminReducedMotion = typeof window.matchMedia === 'function'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (!adminReducedMotion) {
+    adminShell.classList.add('admin-boot');
+    window.setTimeout(() => adminShell.classList.remove('admin-boot'), 1200);
+  }
+}
+
 function getAdminSecret() {
   const defaultSecret = 'admin123';
   const savedSecret = localStorage.getItem('admin_key') || defaultSecret;
@@ -181,7 +204,7 @@ function isFolderInCurrentPath(folderId) {
   return false;
 }
 
-function buildFolderTreeHtml(items, parentId = 0) {
+function buildFolderTreeHtml(items, parentId = 0, counter = { i: 0 }) {
   const children = items.filter((item) => String(item.parent_id || 0) === String(parentId) && item.is_dir);
 
   return children
@@ -190,6 +213,8 @@ function buildFolderTreeHtml(items, parentId = 0) {
       const hasChildren = nestedItems.length > 0;
       const expanded = expandedFolders.has(String(item.id)) || isFolderInCurrentPath(item.id);
       const activeClass = String(item.id) === String(currentFolderId) ? 'active' : '';
+      const treeIndex = Math.min(counter.i, 12);
+      counter.i += 1;
 
       return `
         <div class="tree-node ${expanded ? 'expanded' : ''}">
@@ -197,12 +222,12 @@ function buildFolderTreeHtml(items, parentId = 0) {
             <button type="button" class="tree-toggle ${hasChildren ? '' : 'is-empty'}" data-toggle-folder="${item.id}" aria-expanded="${expanded}" aria-label="展开或收起 ${escapeHtml(item.name)}">
               <i class="fa-solid fa-chevron-right"></i>
             </button>
-            <button type="button" class="folder-tree-item ${activeClass}" data-folder-id="${item.id}">
+            <button type="button" class="folder-tree-item ${activeClass}" data-folder-id="${item.id}" style="--tree-index: ${treeIndex};">
               <i class="fa-solid fa-folder"></i>
               <span>${escapeHtml(item.name)}</span>
             </button>
           </div>
-          <div class="tree-children">${buildFolderTreeHtml(items, item.id)}</div>
+          <div class="tree-children">${buildFolderTreeHtml(items, item.id, counter)}</div>
         </div>
       `;
     })
@@ -218,7 +243,7 @@ function renderFolderTree(items) {
   const nested = buildFolderTreeHtml(items);
   folderTree.innerHTML = `
     <div class="tree-root">
-      <button type="button" class="folder-tree-item ${rootActive}" data-folder-id="0">
+      <button type="button" class="folder-tree-item ${rootActive}" data-folder-id="0" style="--tree-index: 0;">
         <i class="fa-solid fa-house"></i>
         <span>根目录</span>
       </button>
@@ -236,11 +261,11 @@ function renderFolderItems() {
   }
 
   folderItemsBody.innerHTML = items
-    .map((item) => {
+    .map((item, rowIndex) => {
       const typeLabel = item.is_dir ? '文件夹' : '文件';
       const detailText = item.is_dir ? '目录' : item.url || item.size || '—';
       return `
-        <tr>
+        <tr style="--row-index: ${Math.min(rowIndex, 12)};">
           <td>${escapeHtml(item.name || '未命名文件')}</td>
           <td>${typeLabel}</td>
           <td>${escapeHtml(detailText)}</td>
@@ -378,8 +403,8 @@ function renderImportedList(items) {
   }
 
   importedList.innerHTML = items
-    .map((item) => `
-      <tr>
+    .map((item, rowIndex) => `
+      <tr style="--row-index: ${Math.min(rowIndex, 12)};">
         <td>${escapeHtml(item.name || '未命名文件')}</td>
         <td>${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">打开链接</a>` : '—'}</td>
         <td>${escapeHtml(item.pwd || '—')}</td>
