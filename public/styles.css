@@ -13,6 +13,7 @@
   --success: #1dbf73;
   --warning: #ffb648;
   --danger: #ec5d5d;
+  --ease-spring: linear(0, 0.006 1.1%, 0.024 2.3%, 0.054 3.5%, 0.104 5.1%, 0.175 6.8%, 0.275 8.8%, 0.4 10.7%, 0.55 12.8%, 0.7 14.7%, 0.83 16.4%, 0.93 18%, 1.01 19.6%, 1.06 21.2%, 1.08 22.7%, 1.08 24.3%, 1.05 25.8%, 1.02 27.4%, 0.99 29%, 0.98 30.5%, 0.985 32.1%, 1 35%, 1);
 }
 
 * {
@@ -1064,7 +1065,7 @@ body {
 
 /* Homepage motion layer. */
 body:has(.openlist-shell) .openlist-shell {
-  animation: pageReveal 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: pageReveal 0.42s var(--ease-spring) both;
 }
 
 body:has(.openlist-shell) .site-header .brand-mark {
@@ -1072,16 +1073,16 @@ body:has(.openlist-shell) .site-header .brand-mark {
 }
 
 body:has(.openlist-shell) .page-toolbar {
-  animation: contentRise 0.6s 0.12s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: contentRise 0.36s 0.06s var(--ease-spring) both;
 }
 
 body:has(.openlist-shell) .list-panel {
-  animation: contentRise 0.65s 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: contentRise 0.4s 0.12s var(--ease-spring) both;
 }
 
 body:has(.openlist-shell) .view-button,
 body:has(.openlist-shell) .icon-action {
-  transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+  transition: transform 0.18s var(--ease-spring), background-color 0.18s ease, color 0.18s ease;
 }
 
 body:has(.openlist-shell) .view-button:hover,
@@ -1095,15 +1096,15 @@ body:has(.openlist-shell) .icon-action:active {
 }
 
 body:has(.openlist-shell) .desktop-item {
-  animation: itemReveal 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: itemReveal 0.3s var(--ease-spring) both;
 }
 
-body:has(.openlist-shell) .desktop-item:nth-child(1) { animation-delay: 0.28s; }
-body:has(.openlist-shell) .desktop-item:nth-child(2) { animation-delay: 0.34s; }
-body:has(.openlist-shell) .desktop-item:nth-child(3) { animation-delay: 0.4s; }
-body:has(.openlist-shell) .desktop-item:nth-child(4) { animation-delay: 0.46s; }
-body:has(.openlist-shell) .desktop-item:nth-child(5) { animation-delay: 0.52s; }
-body:has(.openlist-shell) .desktop-item:nth-child(6) { animation-delay: 0.58s; }
+body:has(.openlist-shell) .desktop-item:nth-child(1) { animation-delay: 0.14s; }
+body:has(.openlist-shell) .desktop-item:nth-child(2) { animation-delay: 0.18s; }
+body:has(.openlist-shell) .desktop-item:nth-child(3) { animation-delay: 0.22s; }
+body:has(.openlist-shell) .desktop-item:nth-child(4) { animation-delay: 0.26s; }
+body:has(.openlist-shell) .desktop-item:nth-child(5) { animation-delay: 0.3s; }
+body:has(.openlist-shell) .desktop-item:nth-child(6) { animation-delay: 0.34s; }
 
 body:has(.openlist-shell) .desktop-item:not(.is-folder):hover .file-type-icon i {
   animation: iconNudge 0.45s ease;
@@ -1163,7 +1164,7 @@ body:has(.openlist-shell) .list-panel.grid-mode .desktop-item:hover {
 
 /* Homepage motion layer. */
 .site-header {
-  animation: headerReveal 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: headerReveal 0.36s var(--ease-spring) both;
 }
 
 .site-header .brand-mark {
@@ -1172,7 +1173,7 @@ body:has(.openlist-shell) .list-panel.grid-mode .desktop-item:hover {
 
 .view-button,
 .icon-action {
-  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s var(--ease-spring);
 }
 
 .view-button.active,
@@ -1187,19 +1188,19 @@ body:has(.openlist-shell) .list-panel.grid-mode .desktop-item:hover {
 }
 
 .page-toolbar {
-  animation: contentReveal 0.55s 0.12s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: contentReveal 0.34s 0.06s var(--ease-spring) both;
 }
 
 .list-panel {
-  animation: contentReveal 0.6s 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: contentReveal 0.38s 0.12s var(--ease-spring) both;
 }
 
-.desktop-item:nth-child(1) { animation-delay: 0.04s; }
-.desktop-item:nth-child(2) { animation-delay: 0.08s; }
-.desktop-item:nth-child(3) { animation-delay: 0.12s; }
-.desktop-item:nth-child(4) { animation-delay: 0.16s; }
-.desktop-item:nth-child(5) { animation-delay: 0.2s; }
-.desktop-item:nth-child(6) { animation-delay: 0.24s; }
+.desktop-item:nth-child(1) { animation-delay: 0.03s; }
+.desktop-item:nth-child(2) { animation-delay: 0.06s; }
+.desktop-item:nth-child(3) { animation-delay: 0.09s; }
+.desktop-item:nth-child(4) { animation-delay: 0.12s; }
+.desktop-item:nth-child(5) { animation-delay: 0.15s; }
+.desktop-item:nth-child(6) { animation-delay: 0.18s; }
 
 .desktop-item:hover {
   transform: translateX(4px);
@@ -1216,7 +1217,7 @@ body:has(.openlist-shell) .list-panel.grid-mode .desktop-item:hover {
 }
 
 .thank-you-footer {
-  animation: footerReveal 0.5s 0.45s both;
+  animation: footerReveal 0.32s 0.24s var(--ease-spring) both;
 }
 
 @keyframes headerReveal {
@@ -1891,7 +1892,7 @@ body:has(.openlist-shell)::before {
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.94);
   box-shadow: 0 20px 50px rgba(33, 48, 76, 0.2);
-  animation: announcementIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: announcementIn 0.3s var(--ease-spring) both;
 }
 
 .announcement-heading {
@@ -2055,7 +2056,7 @@ body:has(.admin-shell) .admin-header {
 }
 
 body:has(.openlist-shell) .desktop-item {
-  animation-delay: calc(0.08s + (var(--item-index, 0) * 0.06s));
+  animation-delay: calc(0.08s + (var(--item-index, 0) * 0.035s));
 }
 
 /* Thank-you modal entrance motion. */
@@ -2064,7 +2065,7 @@ body:has(.openlist-shell) .thank-you-modal:not(.hidden) {
 }
 
 body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-modal-panel {
-  animation: thankYouPanelIn 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: thankYouPanelIn 0.32s var(--ease-spring) both;
 }
 
 body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-modal-header {
@@ -2073,7 +2074,7 @@ body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-modal-header 
 
 body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-item,
 body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-empty {
-  animation: thankYouItemIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: thankYouItemIn 0.24s var(--ease-spring) both;
 }
 
 body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-item:nth-child(1) { animation-delay: 0.16s; }
@@ -2091,7 +2092,7 @@ body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-item:hover {
 }
 
 .thank-you-modal.is-opening .thank-you-modal-panel {
-  animation: thankYouPanelIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: thankYouPanelIn 0.32s var(--ease-spring) both;
 }
 
 .thank-you-modal.is-opening .thank-you-modal-header {
@@ -2100,7 +2101,7 @@ body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-item:hover {
 
 .thank-you-modal.is-opening .thank-you-item,
 .thank-you-modal.is-opening .thank-you-empty {
-  animation: thankYouItemIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: thankYouItemIn 0.24s var(--ease-spring) both;
 }
 
 @keyframes thankYouBackdropIn {
