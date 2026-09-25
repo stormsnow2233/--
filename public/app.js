@@ -66,6 +66,43 @@ function getFilteredItems(query = '') {
   });
 }
 
+function getItemIconClass(item) {
+  if (item && item.is_dir) {
+    return 'icon-folder';
+  }
+
+  const fileName = String(item?.name || '').toLowerCase();
+  const ext = fileName.includes('.') ? fileName.split('.').pop() : '';
+
+  if (['zip', 'rar', '7z', 'tar', 'gz', 'tgz', 'bz2', 'xz', 'apk'].includes(ext)) {
+    return 'icon-archive';
+  }
+
+  if (['iso', 'img', 'bin', 'cue', 'dmg'].includes(ext)) {
+    return 'icon-disk';
+  }
+
+  return 'icon-file';
+}
+
+function getItemIconHtml(item) {
+  const iconClass = getItemIconClass(item);
+
+  if (iconClass === 'icon-folder') {
+    return '<i class="fa-solid fa-folder"></i>';
+  }
+
+  if (iconClass === 'icon-archive') {
+    return '<i class="fa-solid fa-file-zipper"></i>';
+  }
+
+  if (iconClass === 'icon-disk') {
+    return '<i class="fa-solid fa-compact-disc"></i>';
+  }
+
+  return '<i class="fa-regular fa-file-lines"></i>';
+}
+
 function renderDesktopItems(items) {
   if (!items || items.length === 0) {
     desktopGrid.innerHTML = '<div class="empty-state">当前目录为空</div>';
@@ -76,7 +113,7 @@ function renderDesktopItems(items) {
     .map(
       (item) => `
         <div class="desktop-item ${item.is_dir ? 'is-folder' : 'is-file'}" data-item-id="${escapeHtml(item.id)}" title="${escapeHtml(item.name || '未命名文件')}">
-          <div class="folder-icon" aria-hidden="true"></div>
+          <div class="file-type-icon ${getItemIconClass(item)}" aria-hidden="true">${getItemIconHtml(item)}</div>
           <div class="desktop-name">${escapeHtml(item.name || '未命名文件')}</div>
         </div>
       `
