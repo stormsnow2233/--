@@ -16,7 +16,7 @@ export async function onRequestPost({ request, env }) {
     const body = await request.json().catch(() => ({}));
     const { action, authKey, items = [], parent_id = 0 } = body || {};
 
-    if (authKey && authKey !== (env?.ADMIN_SECRET || ADMIN_SECRET)) {
+    if (!authKey || authKey !== (env?.ADMIN_SECRET || ADMIN_SECRET)) {
       return jsonResponse({ success: false, message: '管理密钥错误' }, 401);
     }
 

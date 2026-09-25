@@ -12,6 +12,10 @@ const folderBreadcrumb = document.getElementById('folderBreadcrumb');
 const uploadFileInput = document.getElementById('uploadFileInput');
 const uploadBtn = document.getElementById('uploadBtn');
 const createFolderBtn = document.getElementById('createFolderBtn');
+const createFolderModal = document.getElementById('createFolderModal');
+const createFolderInput = document.getElementById('createFolderInput');
+const createFolderConfirm = document.getElementById('createFolderConfirm');
+const createFolderCancel = document.getElementById('createFolderCancel');
 const backFolderBtn = document.getElementById('backFolderBtn');
 
 let parsedItems = [];
@@ -346,18 +350,45 @@ async function submitBatchImport() {
   }
 }
 
-async function createFolderAtCurrent() {
-  const folderName = window.prompt('请输入新建文件夹名称：', '新建文件夹');
-  if (!folderName || !folderName.trim()) {
+function openCreateFolderModal() {
+  if (!createFolderModal || !createFolderInput) {
     return;
   }
+
+  createFolderInput.value = '';
+  createFolderModal.classList.add('visible');
+  createFolderInput.focus();
+}
+
+function closeCreateFolderModal() {
+  if (!createFolderModal) {
+    return;
+  }
+
+  createFolderModal.classList.remove('visible');
+  createFolderInput.value = '';
+}
+
+async function createFolderAtCurrent() {
+  if (!createFolderInput || !createFolderModal) {
+    return;
+  }
+
+  const folderName = createFolderInput.value.trim();
+  if (!folderName) {
+    showMessage('请输入文件夹名称', 'error');
+    createFolderInput.focus();
+    return;
+  }
+
+  closeCreateFolderModal();
 
   const adminSecret = getAdminSecret();
   const response = await fetch('/api/folders', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      name: folderName.trim(),
+      name: folderName,
       parent_id: currentFolderId,
       authKey: adminSecret,
     }),
@@ -409,7 +440,34 @@ if (submitBatchBtn) {
 }
 
 if (createFolderBtn) {
-  createFolderBtn.addEventListener('click', createFolderAtCurrent);
+  createFolderBtn.addEventListener('click', openCreateFolderModal);
+}
+
+if (createFolderConfirm) {
+  createFolderConfirm.addEventListener('click', createFolderAtCurrent);
+}
+
+if (createFolderCancel) {
+  createFolderCancel.addEventListener('click', closeCreateFolderModal);
+}
+
+if (createFolderInput) {
+  createFolderInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      createFolderAtCurrent();
+    }
+    if (event.key === 'Escape') {
+      closeCreateFolderModal();
+    }
+  });
+}
+
+if (createFolderModal) {
+  createFolderModal.addEventListener('click', (event) => {
+    if (event.target === createFolderModal) {
+      closeCreateFolderModal();
+    }
+  });
 }
 
 if (backFolderBtn) {

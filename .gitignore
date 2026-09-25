@@ -3,3 +3,7 @@ uploads/*
 !uploads/.gitkeep
 npm-debug.log*
 .DS_Store
+.wrangler/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

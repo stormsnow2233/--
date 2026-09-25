@@ -88,6 +88,18 @@
       </div>
     </div>
 
+    <div id="createFolderModal" class="folder-modal hidden" aria-hidden="true">
+      <div class="folder-modal-panel">
+        <h3>新建文件夹</h3>
+        <label for="createFolderInput" class="folder-modal-label">请输入文件夹名称</label>
+        <input id="createFolderInput" type="text" maxlength="80" placeholder="新建文件夹" />
+        <div class="folder-modal-actions">
+          <button id="createFolderCancel" type="button" class="secondary">取消</button>
+          <button id="createFolderConfirm" type="button" class="primary">确认创建</button>
+        </div>
+      </div>
+    </div>
+
     <script src="/parser.js"></script>
     <script src="/admin.js"></script>
   </body>

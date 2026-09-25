@@ -519,6 +519,56 @@ input[data-field] {
   color: var(--muted);
 }
 
+.folder-modal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(17, 24, 39, 0.45);
+  z-index: 1000;
+}
+
+.folder-modal.visible {
+  display: flex;
+}
+
+.folder-modal-panel {
+  width: min(420px, calc(100vw - 32px));
+  background: rgba(255,255,255,0.96);
+  border: 1px solid rgba(63, 98, 187, 0.14);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 20px 18px 16px;
+}
+
+.folder-modal-panel h3 {
+  margin: 0 0 12px;
+  font-size: 22px;
+}
+
+.folder-modal-label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.folder-modal-panel input {
+  width: 100%;
+  border: 1px solid #dfe7f5;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+}
+
+.folder-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+
 @media (max-width: 820px) {
   .desktop-shell {
     padding: 12px 12px 18px;
