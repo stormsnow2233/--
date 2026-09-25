@@ -3,6 +3,12 @@ const backFolderBtn = document.getElementById('backFolderBtn');
 const desktopGrid = document.getElementById('desktopGrid');
 const resourceSearch = document.getElementById('resourceSearch');
 const folderBreadcrumb = document.getElementById('folderBreadcrumb');
+const thankYouButton = document.getElementById('openThankYouList');
+const thankYouModal = document.getElementById('thankYouModal');
+const thankYouList = document.getElementById('thankYouList');
+const closeThankYouModalBtn = document.getElementById('closeThankYouModal');
+
+const THANKS_KEY = 'thank_you_links';
 
 let allItems = [];
 let currentFolderId = 0;
@@ -181,6 +187,78 @@ if (backFolderBtn) {
     currentFolderId = currentFolder.parent_id || 0;
     renderBreadcrumb();
     renderDesktopItems(getFilteredItems(resourceSearch ? resourceSearch.value : ''));
+  });
+}
+
+function getThankYouLinks() {
+  try {
+    const raw = localStorage.getItem(THANKS_KEY);
+    if (!raw) {
+      return [];
+    }
+
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((item) => item && item.label && item.url) : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function renderThankYouList() {
+  if (!thankYouList) {
+    return;
+  }
+
+  const links = getThankYouLinks();
+
+  if (!links.length) {
+    thankYouList.innerHTML = '<p class="thank-you-empty">还没有设置感谢名单</p>';
+    return;
+  }
+
+  thankYouList.innerHTML = links
+    .map(
+      (item) => `
+        <a class="thank-you-item" href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">
+          ${escapeHtml(item.label)}
+        </a>
+      `
+    )
+    .join('');
+}
+
+function openThankYouModal() {
+  if (!thankYouModal) {
+    return;
+  }
+
+  renderThankYouList();
+  thankYouModal.classList.remove('hidden');
+  thankYouModal.setAttribute('aria-hidden', 'false');
+}
+
+function closeThankYouModal() {
+  if (!thankYouModal) {
+    return;
+  }
+
+  thankYouModal.classList.add('hidden');
+  thankYouModal.setAttribute('aria-hidden', 'true');
+}
+
+if (thankYouButton) {
+  thankYouButton.addEventListener('click', openThankYouModal);
+}
+
+if (closeThankYouModalBtn) {
+  closeThankYouModalBtn.addEventListener('click', closeThankYouModal);
+}
+
+if (thankYouModal) {
+  thankYouModal.addEventListener('click', (event) => {
+    if (event.target === thankYouModal) {
+      closeThankYouModal();
+    }
   });
 }
 

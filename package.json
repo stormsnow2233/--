@@ -9,15 +9,13 @@
   },
   "keywords": [
     "web-disk",
-    "upload",
     "express",
     "file-manager"
   ],
   "author": "GitHub Copilot",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.21.2",
-    "multer": "^2.4.0"
+    "express": "^4.21.2"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"

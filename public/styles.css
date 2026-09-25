@@ -471,6 +471,109 @@ button {
   border-color: #ffd4d4;
 }
 
+.mini-hint {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.thank-you-panel textarea {
+  width: 100%;
+  min-height: 140px;
+  resize: vertical;
+  border: 1px solid #dfe7f5;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-family: Consolas, "Microsoft YaHei", monospace;
+}
+
+.thank-you-footer {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 30;
+}
+
+.thank-you-link {
+  border: 1px solid rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.18);
+  color: #fff;
+  border-radius: 999px;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.12);
+}
+
+.thank-you-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 27, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 40;
+}
+
+.thank-you-modal.hidden {
+  display: none;
+}
+
+.thank-you-modal-panel {
+  width: min(520px, 90vw);
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(255,255,255,0.65);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+
+.thank-you-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.thank-you-modal-header h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.thank-you-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.thank-you-item {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f2f7ff;
+  border: 1px solid #dfeaff;
+  color: #1d4fb7;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.thank-you-item:hover {
+  background: #e8f1ff;
+}
+
+.thank-you-empty {
+  margin: 0;
+  color: var(--muted);
+  text-align: center;
+}
+
 .table-wrap {
   overflow-x: auto;
 }

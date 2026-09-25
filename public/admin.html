@@ -63,12 +63,8 @@
             </div>
           </section>
 
-          <section class="panel upload-panel">
-            <h2>上传到当前目录</h2>
-            <div class="upload-row">
-              <input id="uploadFileInput" type="file" />
-              <button id="uploadBtn" class="primary" type="button">上传文件</button>
-            </div>
+          <section class="panel">
+            <h2>当前目录内容</h2>
             <div id="currentFolderLabel" class="current-folder-label">当前目录：根目录</div>
             <div class="table-wrap">
               <table>
@@ -82,6 +78,15 @@
                 </thead>
                 <tbody id="folderItemsBody"></tbody>
               </table>
+            </div>
+          </section>
+
+          <section class="panel thank-you-panel">
+            <h2>感谢名单设置</h2>
+            <p class="mini-hint">一行一条，格式：名称 | 链接</p>
+            <textarea id="thankYouEditor" placeholder="例如：&#10;某某博客 | https://example.com&#10;某某资源站 | https://example.com"></textarea>
+            <div class="batch-actions">
+              <button id="saveThankYouBtn" class="primary" type="button">保存名单</button>
             </div>
           </section>
         </main>

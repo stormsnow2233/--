@@ -9,14 +9,14 @@ const folderTree = document.getElementById('folderTree');
 const folderItemsBody = document.getElementById('folderItemsBody');
 const currentFolderLabel = document.getElementById('currentFolderLabel');
 const folderBreadcrumb = document.getElementById('folderBreadcrumb');
-const uploadFileInput = document.getElementById('uploadFileInput');
-const uploadBtn = document.getElementById('uploadBtn');
 const createFolderBtn = document.getElementById('createFolderBtn');
 const createFolderModal = document.getElementById('createFolderModal');
 const createFolderInput = document.getElementById('createFolderInput');
 const createFolderConfirm = document.getElementById('createFolderConfirm');
 const createFolderCancel = document.getElementById('createFolderCancel');
 const backFolderBtn = document.getElementById('backFolderBtn');
+const thankYouEditor = document.getElementById('thankYouEditor');
+const saveThankYouBtn = document.getElementById('saveThankYouBtn');
 
 let parsedItems = [];
 let allItems = [];
@@ -32,8 +32,61 @@ function getAdminSecret() {
 }
 
 function showMessage(text, type = 'success') {
-  batchMessageBox.textContent = text;
-  batchMessageBox.className = `message ${type}`;
+  if (batchMessageBox) {
+    batchMessageBox.textContent = text;
+    batchMessageBox.className = `message ${type}`;
+  }
+}
+
+function parseThankYouText(rawText) {
+  const lines = String(rawText || '')
+    .split(/\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return lines
+    .map((line) => {
+      const separatorIndex = line.indexOf('|');
+      if (separatorIndex === -1) {
+        return null;
+      }
+
+      const label = line.slice(0, separatorIndex).trim();
+      const url = line.slice(separatorIndex + 1).trim();
+
+      if (!label || !url) {
+        return null;
+      }
+
+      return { label, url };
+    })
+    .filter(Boolean);
+}
+
+function loadThankYouEditor() {
+  if (!thankYouEditor) {
+    return;
+  }
+
+  try {
+    const raw = localStorage.getItem('thank_you_links');
+    const links = raw ? JSON.parse(raw) : [];
+    thankYouEditor.value = Array.isArray(links)
+      ? links.map((item) => `${item.label || ''} | ${item.url || ''}`).filter((line) => line.includes('|')).join('\n')
+      : '';
+  } catch (error) {
+    thankYouEditor.value = '';
+  }
+}
+
+function saveThankYouSettings() {
+  if (!thankYouEditor) {
+    return;
+  }
+
+  const links = parseThankYouText(thankYouEditor.value);
+  localStorage.setItem('thank_you_links', JSON.stringify(links));
+  showMessage(links.length ? '感谢名单已保存' : '感谢名单已清空', links.length ? 'success' : 'error');
 }
 
 function escapeHtml(value) {
@@ -68,8 +121,12 @@ function getCurrentFolderPath() {
 function renderFolderBreadcrumb() {
   const path = getCurrentFolderPath();
   const label = path.length ? path.map((item) => item.name).join(' / ') : '根目录';
-  folderBreadcrumb.textContent = label;
-  currentFolderLabel.textContent = `当前目录：${label}`;
+  if (folderBreadcrumb) {
+    folderBreadcrumb.textContent = label;
+  }
+  if (currentFolderLabel) {
+    currentFolderLabel.textContent = `当前目录：${label}`;
+  }
 }
 
 function getVisibleItems() {
@@ -404,33 +461,6 @@ async function createFolderAtCurrent() {
   await fetchImportedItems();
 }
 
-async function uploadCurrentFolderFile() {
-  const file = uploadFileInput.files[0];
-  if (!file) {
-    showMessage('请选择要上传的文件', 'error');
-    return;
-  }
-
-  const form = new FormData();
-  form.append('file', file);
-  form.append('parent_id', String(currentFolderId));
-
-  const response = await fetch('/api/files', {
-    method: 'POST',
-    body: form,
-  });
-
-  const data = await response.json();
-  if (!response.ok) {
-    showMessage(data.message || '上传失败', 'error');
-    return;
-  }
-
-  uploadFileInput.value = '';
-  showMessage('上传成功', 'success');
-  await fetchImportedItems();
-}
-
 if (parseBtn) {
   parseBtn.addEventListener('click', handleParseBatch);
 }
@@ -493,9 +523,10 @@ if (folderTree) {
   });
 }
 
-if (uploadBtn) {
-  uploadBtn.addEventListener('click', uploadCurrentFolderFile);
+if (saveThankYouBtn) {
+  saveThankYouBtn.addEventListener('click', saveThankYouSettings);
 }
 
 getAdminSecret();
+loadThankYouEditor();
 fetchImportedItems();
