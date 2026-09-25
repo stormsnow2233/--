@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>网盘资源库</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="desktop-shell">
+      <header class="desktop-topbar">
+        <div class="brand-wrap">
+          <div class="brand-mark">VPS</div>
+          <div class="brand-text">网盘</div>
+        </div>
+
+        <div class="status-pill">本地服务器已连接</div>
+
+        <div class="topbar-actions">
+          <button id="refreshBtn" class="top-action" type="button">刷新</button>
+        </div>
+      </header>
+
+      <main class="desktop-window">
+        <div class="window-tools">
+          <div class="search-panel">
+            <span class="search-icon">⌕</span>
+            <input
+              id="resourceSearch"
+              class="resource-search"
+              type="text"
+              placeholder="搜索资源、文件名或链接"
+              aria-label="搜索资源"
+            />
+          </div>
+        </div>
+
+        <div id="desktopGrid" class="desktop-grid" aria-live="polite"></div>
+      </main>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

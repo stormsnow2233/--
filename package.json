@@ -1,0 +1,25 @@
+{
+  "name": "web-disk",
+  "version": "1.0.0",
+  "description": "A simple file storage web app with Express backend and static frontend.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [
+    "web-disk",
+    "upload",
+    "express",
+    "file-manager"
+  ],
+  "author": "GitHub Copilot",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.2",
+    "multer": "^2.4.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}

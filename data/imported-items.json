@@ -1,0 +1,42 @@
+[
+  {
+    "id": "1790307015679-0-b1d02f",
+    "parent_id": 0,
+    "name": "VSCode.zip",
+    "is_dir": 0,
+    "url": "https://pan.baidu.com/s/1abc",
+    "pwd": "1234",
+    "size": "",
+    "createdAt": "2026-09-25T03:30:15.679Z"
+  },
+  {
+    "id": "1790307015680-1-0d4315",
+    "parent_id": 0,
+    "name": "IDEA破解补丁.7z",
+    "is_dir": 0,
+    "url": "https://www.123pan.com/s/def",
+    "pwd": "8888",
+    "size": "15MB",
+    "createdAt": "2026-09-25T03:30:15.680Z"
+  },
+  {
+    "id": "1790307099328-0-9da116",
+    "parent_id": 0,
+    "name": "demo.txt",
+    "is_dir": 0,
+    "url": "https://example.com/demo",
+    "pwd": "1234",
+    "size": "1MB",
+    "createdAt": "2026-09-25T03:31:39.328Z"
+  },
+  {
+    "id": "1790307107615-0-7dba93",
+    "parent_id": 0,
+    "name": "demo.txt",
+    "is_dir": 0,
+    "url": "https://example.com/demo",
+    "pwd": "1234",
+    "size": "1MB",
+    "createdAt": "2026-09-25T03:31:47.616Z"
+  }
+]

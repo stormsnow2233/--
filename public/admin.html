@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>后台导入</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      .admin-shell {
+        max-width: 1100px;
+        margin: 40px auto;
+        padding: 0 20px 40px;
+      }
+
+      .admin-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .admin-header h1 {
+        margin: 0;
+      }
+
+      .batch-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 180px;
+        border: 1px solid #dfe7f5;
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-size: 14px;
+        font-family: Consolas, "Microsoft YaHei", monospace;
+        resize: vertical;
+      }
+
+      input {
+        width: 100%;
+        border: 1px solid #dfe7f5;
+        border-radius: 10px;
+        padding: 8px 10px;
+      }
+
+      .preview-box {
+        display: none;
+        margin-top: 18px;
+      }
+
+      .preview-box.visible {
+        display: block;
+      }
+
+      .message {
+        min-height: 24px;
+        margin-top: 12px;
+      }
+
+      .message.success {
+        color: #0b8d5a;
+      }
+
+      .message.error {
+        color: #e54d4d;
+      }
+
+      a {
+        color: #2f6ef7;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="admin-shell">
+      <header class="admin-header">
+        <h1>后台导入</h1>
+        <a href="/" style="text-decoration:none;">
+          <button class="secondary" type="button">返回网盘</button>
+        </a>
+      </header>
+
+      <section class="panel">
+        <h2>粘贴分享文本</h2>
+        <textarea id="importInput" placeholder="例如：&#10;我分享了「VSCode.zip」链接：https://pan.baidu.com/s/1abc 提取码: 1234&#10;IDEA破解补丁.7z | https://www.123pan.com/s/def | 8888 | 15MB"></textarea>
+
+        <div class="batch-actions">
+          <button id="parseBtn" class="secondary" type="button">解析预览</button>
+          <button id="submitBatchBtn" class="primary" type="button">确认导入</button>
+        </div>
+
+        <p id="batchMessage" class="message" aria-live="polite"></p>
+      </section>
+
+      <section id="previewWrap" class="panel preview-box">
+        <h2>预览与微调</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>名称</th>
+                <th>链接</th>
+                <th>提取码</th>
+                <th>大小</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="parsedTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>已导入资源</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>名称</th>
+                <th>链接</th>
+                <th>提取码</th>
+                <th>大小</th>
+              </tr>
+            </thead>
+            <tbody id="importedList"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <script src="/parser.js"></script>
+    <script src="/admin.js"></script>
+  </body>
+</html>
