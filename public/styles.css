@@ -1632,8 +1632,8 @@ body:has(.openlist-shell)::before {
      animation you can catch repeating. Gemini keeps its ambient motion in the
      tens of seconds for the same reason. */
   animation:
-    atmosphereDrift 38s ease-in-out infinite alternate,
-    atmosphereBreathe 27s ease-in-out infinite;
+    atmosphereDrift 19s ease-in-out infinite alternate,
+    atmosphereBreathe 13s ease-in-out infinite;
   z-index: -1;
 }
 
@@ -1821,14 +1821,14 @@ body:has(.openlist-shell)::before {
 }
 
 @keyframes atmosphereDrift {
-  from { transform: translate3d(-2%, -1%, 0) scale(1); }
-  to { transform: translate3d(2%, 2%, 0) scale(1.08); }
+  from { transform: translate3d(-3.5%, -2%, 0) scale(0.98); }
+  to { transform: translate3d(3.5%, 2.5%, 0) scale(1.12); }
 }
 
 /* Runs on a different period than the drift so the two never phase back into an
    obvious, catchable loop. */
 @keyframes atmosphereBreathe {
-  0%, 100% { opacity: 0.72; }
+  0%, 100% { opacity: 0.55; }
   50% { opacity: 1; }
 }
 
@@ -1893,7 +1893,16 @@ body:has(.openlist-shell) {
   --mo-ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --mo-ease-entrance: cubic-bezier(0.05, 0.7, 0.1, 1);
   --mo-ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
-  --mo-stagger: 0.03s;
+  /* The one easing in this layer that overshoots its target. Reserved strictly
+     for things the user just touched, so the page feels responsive rather than
+     inert without turning every hover into a bounce. */
+  --mo-ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --mo-stagger: 0.055s;
+  /* Heavy, layered shadows — weight is what makes an interaction feel like it
+     has force; a 1px lift with a faint shadow never will. */
+  --mo-lift-row: 0 10px 24px -6px rgba(42, 109, 246, 0.28);
+  --mo-lift-card: 0 24px 44px -12px rgba(37, 47, 64, 0.34);
+  --mo-lift-btn: 0 10px 20px -6px rgba(22, 141, 242, 0.42);
 }
 
 /* While the page is still booting the shell is hidden, so the static markup and
@@ -2019,7 +2028,7 @@ body:has(.openlist-shell) .site-header .brand-mark:hover::before {
 body:has(.openlist-shell) .view-button,
 body:has(.openlist-shell) .icon-action {
   transition:
-    transform var(--mo-quick) var(--mo-ease-standard),
+    transform var(--mo-quick) var(--mo-ease-pop),
     background-color var(--mo-quick) ease,
     color var(--mo-quick) ease,
     box-shadow var(--mo-quick) ease;
@@ -2027,18 +2036,18 @@ body:has(.openlist-shell) .icon-action {
 
 body:has(.openlist-shell) .view-button:hover,
 body:has(.openlist-shell) .icon-action:hover {
-  transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 8px 18px rgba(22, 141, 242, 0.16);
+  transform: translateY(-3px) scale(1.12);
+  box-shadow: var(--mo-lift-btn);
 }
 
 body:has(.openlist-shell) .view-button:active,
 body:has(.openlist-shell) .icon-action:active {
-  transform: translateY(0) scale(0.93);
+  transform: translateY(1px) scale(0.9);
   transition-duration: var(--mo-instant);
 }
 
 body:has(.openlist-shell) .view-button.active {
-  box-shadow: 0 6px 14px rgba(22, 141, 242, 0.18);
+  box-shadow: 0 8px 18px -4px rgba(22, 141, 242, 0.34);
 }
 
 /* ---------- toolbar + breadcrumb ---------- */
@@ -2050,15 +2059,17 @@ body:has(.openlist-shell) .breadcrumb-item {
   transition:
     background-color var(--mo-quick) ease,
     color var(--mo-quick) ease,
-    transform var(--mo-quick) var(--mo-ease-standard);
+    transform var(--mo-quick) var(--mo-ease-pop),
+    box-shadow var(--mo-quick) ease;
 }
 
 body:has(.openlist-shell) .breadcrumb-item:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px) scale(1.06);
+  box-shadow: 0 6px 14px -4px rgba(22, 141, 242, 0.36);
 }
 
 body:has(.openlist-shell) .breadcrumb-item:active {
-  transform: translateY(0) scale(0.96);
+  transform: translateY(0) scale(0.92);
   transition-duration: var(--mo-instant);
 }
 
@@ -2118,32 +2129,36 @@ body:has(.openlist-shell) .empty-state::before {
 /* ---------- file rows ---------- */
 body:has(.openlist-shell) .desktop-item {
   animation: none;
+  position: relative;
   transition:
     background-color var(--mo-base) ease,
-    transform var(--mo-base) var(--mo-ease-standard),
+    transform var(--mo-base) var(--mo-ease-pop),
     box-shadow var(--mo-base) ease;
 }
 
 body:has(.openlist-shell) .desktop-item:hover {
-  background: #f7fbff;
+  background: #eef5ff;
+  transform: translateX(5px);
+  box-shadow: var(--mo-lift-row);
 }
 
 body:has(.openlist-shell) .file-type-icon {
   transition:
-    transform var(--mo-base) var(--mo-ease-standard),
+    transform var(--mo-base) var(--mo-ease-pop),
     background-color var(--mo-base) ease;
 }
 
 body:has(.openlist-shell) .desktop-item:hover .file-type-icon {
-  transform: scale(1.06);
+  transform: scale(1.2);
 }
 
 body:has(.openlist-shell) .desktop-item:active {
-  background: #eef5ff;
+  background: #e3eeff;
+  transform: translateX(2px) scale(0.995);
 }
 
 body:has(.openlist-shell) .desktop-item:active .file-type-icon {
-  transform: scale(0.96);
+  transform: scale(0.92);
 }
 
 body:has(.openlist-shell) .desktop-name {
@@ -2152,25 +2167,26 @@ body:has(.openlist-shell) .desktop-name {
 
 body:has(.openlist-shell) .desktop-item:hover .desktop-name {
   color: #168df2;
+  font-weight: 600;
 }
 
 /* Grid cards: lift as one piece — this is the ONLY transform on hover, so it can
    no longer fight the list-view rule. */
 body:has(.openlist-shell) .list-panel.grid-mode .desktop-item {
   transition:
-    transform var(--mo-base) var(--mo-ease-standard),
+    transform var(--mo-base) var(--mo-ease-pop),
     box-shadow var(--mo-base) ease,
     background-color var(--mo-base) ease;
 }
 
 body:has(.openlist-shell) .list-panel.grid-mode .desktop-item:hover {
-  transform: translateY(-3px);
+  transform: translateY(-8px);
   background: #fff;
-  box-shadow: 0 12px 24px rgba(37, 47, 64, 0.12);
+  box-shadow: var(--mo-lift-card);
 }
 
 body:has(.openlist-shell) .list-panel.grid-mode .desktop-item:active {
-  transform: translateY(-1px) scale(0.985);
+  transform: translateY(-2px) scale(0.975);
 }
 
 /* ---------- pagination ---------- */
@@ -2182,27 +2198,32 @@ body:has(.openlist-shell) .page-button {
   transition:
     background-color var(--mo-quick) ease,
     color var(--mo-quick) ease,
-    transform var(--mo-quick) var(--mo-ease-standard),
+    transform var(--mo-quick) var(--mo-ease-pop),
     box-shadow var(--mo-quick) ease;
 }
 
+body:has(.openlist-shell) .page-button:hover:not(:disabled) {
+  transform: translateY(-3px) scale(1.08);
+  box-shadow: 0 8px 16px -6px rgba(22, 141, 242, 0.42);
+}
+
 body:has(.openlist-shell) .page-button:active:not(:disabled) {
-  transform: translateY(0) scale(0.94);
+  transform: translateY(0) scale(0.9);
   transition-duration: var(--mo-instant);
 }
 
 /* ---------- fixed footer ---------- */
 body:has(.openlist-shell) .thank-you-footer .thank-you-link {
   transition:
-    transform var(--mo-base) var(--mo-ease-standard),
+    transform var(--mo-base) var(--mo-ease-pop),
     background-color var(--mo-base) ease,
     box-shadow var(--mo-base) ease;
 }
 
 body:has(.openlist-shell) .thank-you-footer .thank-you-link:hover {
-  transform: translateY(-3px);
-  background: rgba(255, 255, 255, 0.28);
-  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.18);
+  transform: translateY(-5px) scale(1.07);
+  background: rgba(255, 255, 255, 0.32);
+  box-shadow: 0 22px 40px -10px rgba(0, 0, 0, 0.34);
 }
 
 body:has(.openlist-shell) .thank-you-footer .thank-you-link:active {
@@ -2219,33 +2240,33 @@ body:has(.openlist-shell) :is(button, a, input):focus-visible {
 
 /* ---------- keyframes ---------- */
 @keyframes homeShellIn {
-  from { opacity: 0; transform: translateY(8px) scale(0.994); }
+  from { opacity: 0; transform: translateY(18px) scale(0.965); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes homeHeaderIn {
-  from { opacity: 0; transform: translateY(-12px); }
+  from { opacity: 0; transform: translateY(-22px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes homeBrandIn {
-  0% { opacity: 0; transform: rotate(-70deg) scale(0.6); }
+  0% { opacity: 0; transform: rotate(-150deg) scale(0.35); }
   60% { opacity: 1; }
   100% { opacity: 1; transform: rotate(-15deg) scale(1); }
 }
 
 @keyframes homeToolIn {
-  from { opacity: 0; transform: translateY(-8px) scale(0.94); }
+  from { opacity: 0; transform: translateY(-14px) scale(0.86); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes homeRiseIn {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes homeRiseSoftIn {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -2255,25 +2276,25 @@ body:has(.openlist-shell) :is(button, a, input):focus-visible {
 }
 
 @keyframes homePanelIn {
-  from { opacity: 0; transform: translateY(14px) scale(0.99); }
+  from { opacity: 0; transform: translateY(26px) scale(0.968); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes homeItemIn {
-  from { opacity: 0; transform: translateY(10px) scale(0.992); }
+  from { opacity: 0; transform: translateY(22px) scale(0.978); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes homeBrandFloat {
   0%, 100% { transform: rotate(-15deg) translateY(0); }
-  50% { transform: rotate(-15deg) translateY(-3px); }
+  50% { transform: rotate(-15deg) translateY(-6px); }
 }
 
 /* The logo halo breathes on its own, the way Gemini's .lm-glow blooms to
    opacity 0.5 and back rather than snapping in. */
 @keyframes homeGlowBreathe {
-  0%, 100% { opacity: 0.18; transform: scale(0.88); }
-  50% { opacity: 0.5; transform: scale(1.06); }
+  0%, 100% { opacity: 0.14; transform: scale(0.82); }
+  50% { opacity: 0.62; transform: scale(1.16); }
 }
 
 /* ---------- thank-you modal ---------- */
@@ -2344,7 +2365,7 @@ body:has(.openlist-shell) .thank-you-modal.is-closing .thank-you-modal-panel {
 }
 
 @keyframes thankYouItemIn {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
