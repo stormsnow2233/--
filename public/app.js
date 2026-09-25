@@ -393,7 +393,7 @@ function renderDesktopItems(items) {
       const animationIndex = Math.min(index, MOTION_STAGGER_CAP);
 
       return `
-        <div class="desktop-item ${item.is_dir ? 'is-folder' : 'is-file'}" data-item-id="${escapeHtml(item.id)}" style="--item-index: ${animationIndex}; --vt-name: vti-${escapeHtml(String(item.id))};" title="${escapeHtml(item.name || '未命名文件')}">
+        <div class="desktop-item ${item.is_dir ? 'is-folder' : 'is-file'}" data-item-id="${escapeHtml(item.id)}" style="--item-index: ${animationIndex};" title="${escapeHtml(item.name || '未命名文件')}">
           <div class="item-main">
             <div class="file-type-icon ${getItemIconClass(item)}" aria-hidden="true">${getItemIconHtml(item)}</div>
             <div class="desktop-name-wrap">
