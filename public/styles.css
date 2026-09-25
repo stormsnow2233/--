@@ -1516,6 +1516,32 @@ input[data-field] {
   box-shadow: 0 0 0 3px rgba(93,127,233,0.12);
 }
 
+/* Which cloud a parsed row came from. Colour-coded so a mixed batch is readable
+   at a glance; falls back to a neutral tag for unrecognised hosts. */
+.drive-tag {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: rgba(42, 109, 246, 0.1);
+  color: #2a6df6;
+}
+
+.drive-baidu { background: rgba(41, 121, 255, 0.12); color: #2979ff; }
+.drive-quark { background: rgba(124, 77, 255, 0.12); color: #6c3bff; }
+.drive-aliyun { background: rgba(255, 106, 0, 0.13); color: #d95b00; }
+.drive-xunlei { background: rgba(0, 168, 232, 0.13); color: #0089bd; }
+.drive-tianyi { background: rgba(233, 30, 99, 0.11); color: #c2185b; }
+.drive-123pan { background: rgba(0, 150, 136, 0.13); color: #00796b; }
+.drive-115 { background: rgba(63, 81, 181, 0.12); color: #3f51b5; }
+.drive-google { background: rgba(52, 168, 83, 0.13); color: #1e8e3e; }
+.drive-onedrive { background: rgba(0, 120, 212, 0.13); color: #0364b8; }
+.drive-dropbox { background: rgba(0, 97, 255, 0.12); color: #0057e7; }
+.drive-mega { background: rgba(217, 39, 39, 0.12); color: #c62828; }
+.drive-other { background: rgba(109, 119, 136, 0.12); color: #5c6675; }
+
 .tiny-link {
   color: #2f6ef7;
   text-decoration: none;
@@ -1694,7 +1720,13 @@ body:has(.openlist-shell)::before {
   align-items: flex-start;
   justify-content: flex-end;
   padding: 92px max(24px, calc((100vw - 960px) / 2)) 24px;
-  background: rgba(24, 32, 48, 0.18);
+  /* A transparent wrapper that must not intercept anything. Without
+     pointer-events: none this full-viewport box still swallowed clicks even
+     though it painted nothing, so the page underneath was unusable while the
+     announcement was up (the logo could not be clicked). Only the panel itself
+     is interactive now; the page behind stays fully live. */
+  background: transparent;
+  pointer-events: none;
 }
 
 .announcement-modal.hidden {
@@ -1709,6 +1741,8 @@ body:has(.openlist-shell)::before {
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.94);
   box-shadow: 0 20px 50px rgba(33, 48, 76, 0.2);
+  /* Re-enable interaction for the panel itself; the wrapper opted out. */
+  pointer-events: auto;
   animation: announcementIn 0.3s var(--ease-spring) both;
 }
 

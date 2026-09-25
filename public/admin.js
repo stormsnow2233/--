@@ -429,6 +429,7 @@ function renderParsedItems(items) {
       (item, index) => `
         <tr>
           <td><input data-index="${index}" data-field="name" value="${escapeHtml(item.name)}" /></td>
+          <td><span class="drive-tag drive-${escapeHtml(item.drive || 'other')}">${escapeHtml(item.driveLabel || detectDrive(item.url).label)}</span></td>
           <td><input data-index="${index}" data-field="url" value="${escapeHtml(item.url)}" /></td>
           <td><input data-index="${index}" data-field="pwd" value="${escapeHtml(item.pwd)}" /></td>
           <td><input data-index="${index}" data-field="size" value="${escapeHtml(item.size)}" /></td>
@@ -466,7 +467,11 @@ function handleParseBatch() {
   }
 
   renderParsedItems(items);
-  showMessage(`已识别 ${items.length} 条资源，可继续微调。`, 'success');
+  const summary = typeof summarizeDrives === 'function' ? summarizeDrives(items) : '';
+  showMessage(
+    `已识别 ${items.length} 条资源${summary ? `（${summary}）` : ''}，可继续微调。`,
+    'success'
+  );
 }
 
 async function fetchImportedItems() {

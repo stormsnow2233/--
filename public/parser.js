@@ -1,67 +1,161 @@
-function parseBatchInput(rawText) {
-  const text = String(rawText || '').trim();
-  if (!text) return [];
+/* Share-link parser with multi-cloud support.
+   Recognises Baidu, Quark, Aliyun, Xunlei, Tianyi, 123pan, 115, Google Drive,
+   OneDrive, Dropbox and Mega share URLs. Direct links and folder links work too;
+   an unknown host is kept as a generic entry rather than dropped.
 
-  if (text.includes('|') || text.includes('\t')) {
-    return text
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter((line) => line && (line.includes('|') || line.includes('\t')))
-      .map((line) => {
-        const delimiter = line.includes('|') ? '|' : '\t';
-        const parts = line.split(delimiter).map((part) => part.trim());
-        return {
-          name: parts[0] || '未命名文件',
-          url: parts[1] || '',
-          pwd: parts[2] || '',
-          size: parts[3] || '',
-          is_dir: 0,
-        };
-      })
-      .filter((item) => item.url);
+   Two input styles, unchanged from before:
+     我分享了「名字.zip」链接：https://pan.baidu.com/s/1abc 提取码: 1234
+     名字.7z | https://www.123pan.com/s/def | 8888 | 15MB
+*/
+
+/* Each drive: a label, host test, and whether a share code is normally needed.
+   `needsCode` drives only the UI hint and whether a bare 4-character code is
+   harvested as a password for that host. */
+const DRIVE_DEFS = [
+  { id: 'baidu', label: '百度网盘', needsCode: true, host: /(^|\.)(pan|yun|eyun)\.baidu\.com$/i, url: /https?:\/\/[^\s"'<>]*baidu\.com[^\s"'<>]*/i },
+  { id: 'quark', label: '夸克网盘', needsCode: true, host: /(^|\.)pan\.quark\.cn$/i, url: /https?:\/\/[^\s"'<>]*(?:pan\.quark\.cn|quark\.cn\/s\/)[^\s"'<>]*/i },
+  { id: 'aliyun', label: '阿里云盘', needsCode: true, host: /(^|\.)(aliyundrive|alipan)\.com$/i, url: /https?:\/\/[^\s"'<>]*(?:aliyundrive\.com|alipan\.com)[^\s"'<>]*/i },
+  { id: 'xunlei', label: '迅雷云盘', needsCode: true, host: /(^|\.)pan\.xunlei\.com$/i, url: /https?:\/\/[^\s"'<>]*pan\.xunlei\.com[^\s"'<>]*/i },
+  { id: 'tianyi', label: '天翼云盘', needsCode: true, host: /(^|\.)(cloud\.189\.cn|189\.cn)$/i, url: /https?:\/\/[^\s"'<>]*(?:cloud\.189\.cn|189\.cn)[^\s"'<>]*/i },
+  { id: '123pan', label: '123 云盘', needsCode: true, host: /(^|\.)(123pan|123684|123865|123912|123592)\.com$/i, url: /https?:\/\/[^\s"'<>]*123(?:pan|684|865|912|592)\.com[^\s"'<>]*/i },
+  { id: '115', label: '115 网盘', needsCode: true, host: /(^|\.)(115\.com|115cdn\.com|anxia\.com)$/i, url: /https?:\/\/[^\s"'<>]*(?:115\.com|115cdn\.com|anxia\.com)[^\s"'<>]*/i },
+  { id: 'google', label: 'Google Drive', needsCode: false, host: /(^|\.)(drive|docs)\.google\.com$/i, url: /https?:\/\/[^\s"'<>]*(?:drive|docs)\.google\.com[^\s"'<>]*/i },
+  { id: 'onedrive', label: 'OneDrive', needsCode: false, host: /(^|\.)(1drv\.ms|onedrive\.live\.com|sharepoint\.com)$/i, url: /https?:\/\/[^\s"'<>]*(?:1drv\.ms|onedrive\.live\.com|sharepoint\.com)[^\s"'<>]*/i },
+  { id: 'dropbox', label: 'Dropbox', needsCode: false, host: /(^|\.)dropbox\.com$/i, url: /https?:\/\/[^\s"'<>]*dropbox\.com[^\s"'<>]*/i },
+  { id: 'mega', label: 'MEGA', needsCode: false, host: /(^|\.)mega\.nz$/i, url: /https?:\/\/[^\s"'<>]*mega\.nz[^\s"'<>]*/i },
+];
+
+const GENERIC_DRIVE = { id: 'other', label: '其他链接', needsCode: true };
+
+function hostOf(url) {
+  const match = String(url || '').match(/^https?:\/\/([^/?#]+)/i);
+  if (!match) {
+    return '';
+  }
+  return match[1].replace(/:\d+$/, '').toLowerCase();
+}
+
+/* Which drive a URL belongs to. Falls back to a generic entry. */
+function detectDrive(url) {
+  const host = hostOf(url);
+  if (!host) {
+    return GENERIC_DRIVE;
   }
 
-  const results = [];
+  for (const drive of DRIVE_DEFS) {
+    if (drive.host.test(host)) {
+      return drive;
+    }
+  }
+
+  return GENERIC_DRIVE;
+}
+
+/* Strip trailing punctuation that prose tends to leave on a URL, and drop
+   tracking noise some clients append when copying a share link. */
+function cleanUrl(rawUrl) {
+  let url = String(rawUrl || '').trim();
+  url = url.replace(/[),，。、；;！!？?】】"'<>]+$/g, '');
+
+  const drive = detectDrive(url);
+  if (drive.id === 'google') {
+    // Google Drive appends ?usp=sharing / &usp=drive_link; harmless but noisy.
+    url = url.replace(/([?&])usp=[^&]*&?/gi, '$1').replace(/[?&]$/, '');
+  }
+
+  return url;
+}
+
+/* Pull a share code out of the text that follows (or precedes) a link.
+   Only meaningful for drives that actually use codes. */
+function extractCode(text, drive) {
+  if (!drive.needsCode) {
+    return '';
+  }
+
+  const labelled = String(text || '').match(
+    /(?:提取码|访问码|密码|分享码|提取密码|code|pwd|passcode)\s*[:：=]?\s*([a-zA-Z0-9]{1,16})/i
+  );
+  if (labelled) {
+    return labelled[1];
+  }
+
+  // Baidu also writes it as "?pwd=abcd" inside the link itself.
+  const inUrl = String(text || '').match(/[?&]pwd=([a-zA-Z0-9]{1,16})/i);
+  if (inUrl) {
+    return inUrl[1];
+  }
+
+  // Last resort: a bare 4-character code sitting on its own, e.g. "8888".
+  const bare = String(text || '').match(/(?:^|[\s（(【\]])([a-zA-Z0-9]{4})(?=$|[\s）)】\]])/);
+  return bare ? bare[1] : '';
+}
+
+function extractSize(text) {
+  const match = String(text || '').match(/(\d+(?:\.\d+)?\s*(?:GB|MB|KB|TB|G|M|K|T))/i);
+  return match ? match[0].replace(/\s+/g, '').toUpperCase() : '';
+}
+
+function extractName(prevBlock, postBlock) {
+  const quoted = (prevBlock + '\n' + postBlock).match(/[「“"'](.+?)[」”"']/);
+  if (quoted) {
+    return quoted[1].trim();
+  }
+
+  const lineBefore = String(prevBlock || '').split(/\r?\n/).pop() || '';
+  const cleaned = lineBefore
+    .replace(/我.*?分享了|分享了|链接\s*[:：]?|地址\s*[:：]?/g, '')
+    .replace(/[\s\u3000]+/g, ' ')
+    .trim();
+
+  // Never let a bare URL (or a leftover code label) become the resource name.
+  if (!cleaned || /^https?:\/\//i.test(cleaned) || /^(?:提取码|访问码|密码|分享码|code|pwd)\b/i.test(cleaned)) {
+    return '';
+  }
+
+  return cleaned;
+}
+
+/* Parse one pipe/tab delimited row: name | url | pwd | size */
+function parseDelimitedLine(line) {
+  const delimiter = line.includes('|') ? '|' : '\t';
+  const parts = line.split(delimiter).map((part) => part.trim());
+  const url = cleanUrl(parts[1] || '');
+  const drive = detectDrive(url);
+  return {
+    name: parts[0] || '未命名文件',
+    url,
+    pwd: parts[2] || '',
+    size: parts[3] || '',
+    drive: drive.id,
+    driveLabel: drive.label,
+    is_dir: 0,
+  };
+}
+
+/* Scan a run of plain prose for share links. `nextIndex` is where the next
+   delimited row starts, used to bound the last link's trailing context. */
+function parseProseBlock(block, absoluteOffset) {
   const urlRegex = /https?:\/\/[^\s"'<>]+/gi;
-  const matches = [...text.matchAll(urlRegex)];
-
-  if (!matches.length) {
-    return [];
-  }
+  const matches = [...block.matchAll(urlRegex)];
+  const results = [];
 
   for (let i = 0; i < matches.length; i += 1) {
     const match = matches[i];
-    const url = match[0];
+    const url = cleanUrl(match[0]);
+    const drive = detectDrive(url);
     const startIndex = match.index;
-    const endIndex = i + 1 < matches.length ? matches[i + 1].index : text.length;
-    const prevBlock = text.slice(Math.max(0, startIndex - 100), startIndex);
-    const postBlock = text.slice(startIndex, endIndex);
-    const combinedBlock = prevBlock + '\n' + postBlock;
-
-    const pwdMatch = postBlock.match(/(?:提取码|密码|访问码|code)[:：\s]*([a-zA-Z0-9]+)/i);
-    const pwd = pwdMatch ? pwdMatch[1] : '';
-
-    const sizeMatch = postBlock.match(/(\d+(?:\.\d+)?\s*(?:GB|MB|KB|G|M|K))/i);
-    const size = sizeMatch ? sizeMatch[0].toUpperCase() : '';
-
-    let name = '';
-    const quoteMatch = combinedBlock.match(/[「“"'](.+?)[」”"']/);
-    if (quoteMatch) {
-      name = quoteMatch[1].trim();
-    } else {
-      const lineBeforeUrl = prevBlock.split(/\r?\n/).pop() || '';
-      const cleaned = lineBeforeUrl
-        .replace(/我.*?分享了|链接[:：]?/g, '')
-        .replace(/[\s\u3000]+/g, ' ')
-        .trim();
-      name = cleaned || '新分享资源';
-    }
+    const endIndex = i + 1 < matches.length ? matches[i + 1].index : block.length;
+    const prevBlock = block.slice(Math.max(0, startIndex - 100), startIndex);
+    const postBlock = block.slice(startIndex, endIndex);
 
     results.push({
-      name: name || '新分享资源',
+      name: extractName(prevBlock, postBlock) || '新分享资源',
       url,
-      pwd,
-      size,
+      pwd: extractCode(postBlock, drive),
+      size: extractSize(postBlock),
+      drive: drive.id,
+      driveLabel: drive.label,
       is_dir: 0,
     });
   }
@@ -69,10 +163,77 @@ function parseBatchInput(rawText) {
   return results;
 }
 
+function parseBatchInput(rawText) {
+  const text = String(rawText || '').trim();
+  if (!text) {
+    return [];
+  }
+
+  /* Decide per line, not globally. A batch that mixes delimited rows with prose
+     (or a bare URL) must keep both: an earlier all-or-nothing pipe check threw
+     away every non-pipe line. */
+  const lines = text.split(/\r?\n/);
+  const isDelimited = (line) => line.includes('|') || line.includes('\t');
+  const hasDelimitedRow = lines.some((line) => line.trim() && isDelimited(line));
+
+  if (!hasDelimitedRow) {
+    return parseProseBlock(text);
+  }
+
+  const results = [];
+  let proseBuffer = [];
+
+  const flushProse = () => {
+    if (!proseBuffer.length) {
+      return;
+    }
+    results.push(...parseProseBlock(proseBuffer.join('\n')));
+    proseBuffer = [];
+  };
+
+  for (const line of lines) {
+    if (!line.trim()) {
+      proseBuffer.push(line);
+      continue;
+    }
+
+    if (isDelimited(line)) {
+      flushProse();
+      const item = parseDelimitedLine(line);
+      if (item.url) {
+        results.push(item);
+      }
+      continue;
+    }
+
+    proseBuffer.push(line);
+  }
+
+  flushProse();
+  return results;
+}
+
+/* Human-readable summary of which drives a parsed batch covers, e.g.
+   "百度网盘 ×2、Google Drive ×1". Used for the admin feedback message. */
+function summarizeDrives(items) {
+  const counts = new Map();
+  for (const item of items || []) {
+    const label = item.driveLabel || detectDrive(item.url).label;
+    counts.set(label, (counts.get(label) || 0) + 1);
+  }
+
+  return [...counts.entries()]
+    .map(([label, count]) => (count > 1 ? `${label} ×${count}` : label))
+    .join('、');
+}
+
 if (typeof window !== 'undefined') {
   window.parseBatchInput = parseBatchInput;
+  window.detectDrive = detectDrive;
+  window.summarizeDrives = summarizeDrives;
+  window.DRIVE_DEFS = DRIVE_DEFS;
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { parseBatchInput };
+  module.exports = { parseBatchInput, detectDrive, summarizeDrives, DRIVE_DEFS };
 }
