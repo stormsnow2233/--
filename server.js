@@ -8,16 +8,31 @@ const dataDir = path.join(__dirname, 'data');
 const importedItemsFile = path.join(dataDir, 'imported-items.json');
 const ADMIN_SECRET = process.env.ADMIN_SECRET || 'admin123';
 
+if (!process.env.ADMIN_SECRET) {
+  console.warn('[web-disk] ⚠️  ADMIN_SECRET 未通过环境变量设置，当前使用默认值（仅适用于本地开发，请勿用于生产）');
+}
+
 fs.mkdirSync(dataDir, { recursive: true });
 
-const db = {
-  async batch(items) {
-    const existing = readImportedItems();
-    const next = [...existing, ...items];
-    writeImportedItems(next);
-    return next;
-  },
-};
+/* ---------- write lock ---------------------------------------------------
+   Serialises every read-modify-write cycle that touches imported-items.json.
+   All current I/O is synchronous so Node's single-threaded event loop already
+   prevents interleaving within a single tick — but an explicit queue makes the
+   intent clear and protects if the code ever switches to async file I/O.
+
+   Each withWriteLock(fn) call:
+     - waits for all previous fn calls to finish before running fn
+     - resolves/rejects with whatever fn returns or throws
+     - never blocks the queue on error (the tail promise always resolves)    */
+let _writeQueue = Promise.resolve();
+
+function withWriteLock(fn) {
+  const step = _writeQueue.then(() => fn());
+  // The tail must never reject; a failed step must not stall the whole queue.
+  _writeQueue = step.then(() => {}, () => {});
+  return step;
+}
+/* ------------------------------------------------------------------------ */
 
 function writeImportedItems(items) {
   fs.writeFileSync(importedItemsFile, JSON.stringify(items, null, 2), 'utf-8');
@@ -95,12 +110,11 @@ function collectDescendantIds(items, itemId, acc = new Set()) {
   return acc;
 }
 
-function enforceAdminSecret(req, res, next) {
-  const authKey = req.body && req.body.authKey;
-  if (authKey && authKey !== ADMIN_SECRET) {
-    return res.status(401).json({ success: false, message: '管理密钥错误' });
-  }
-  return next();
+/* Centralised auth check. An absent key is treated the same as a wrong key —
+   the old pattern (authKey && authKey !== SECRET) silently let requests through
+   when authKey was omitted entirely. */
+function requireAdminSecret(authKey) {
+  return Boolean(authKey) && authKey === ADMIN_SECRET;
 }
 
 app.use((req, res, next) => {
@@ -198,10 +212,10 @@ app.get('/api/imported-items', (req, res) => {
   });
 });
 
-app.post('/api/folders', (req, res) => {
+app.post('/api/folders', async (req, res) => {
   const { name, parent_id = 0, authKey } = req.body || {};
 
-  if (!authKey || authKey !== ADMIN_SECRET) {
+  if (!requireAdminSecret(authKey)) {
     return res.status(401).json({ success: false, message: '管理密钥错误' });
   }
 
@@ -211,69 +225,90 @@ app.post('/api/folders', (req, res) => {
   }
 
   const normalizedParentId = normalizeParentId(parent_id);
-  const items = readImportedItems();
-  const alreadyExists = items.some(
-    (item) =>
-      String(item.parent_id || 0) === String(normalizedParentId) &&
-      item.is_dir &&
-      String(item.name || '').trim().toLowerCase() === folderName.toLowerCase()
-  );
 
-  if (alreadyExists) {
-    return res.status(409).json({ success: false, message: '同一目录下已存在同名文件夹' });
+  try {
+    const folder = await withWriteLock(() => {
+      const items = readImportedItems();
+      const alreadyExists = items.some(
+        (item) =>
+          String(item.parent_id || 0) === String(normalizedParentId) &&
+          item.is_dir &&
+          String(item.name || '').trim().toLowerCase() === folderName.toLowerCase()
+      );
+      if (alreadyExists) {
+        const err = new Error('同一目录下已存在同名文件夹');
+        err.statusCode = 409;
+        throw err;
+      }
+      const newFolder = normalizeItem({
+        id: createId('folder'),
+        parent_id: normalizedParentId,
+        name: folderName,
+        is_dir: true,
+        kind: 'folder',
+        createdAt: new Date().toISOString(),
+      });
+      items.push(newFolder);
+      writeImportedItems(items);
+      return newFolder;
+    });
+    res.status(201).json({ success: true, folder });
+  } catch (error) {
+    const status = error.statusCode || 500;
+    res.status(status).json({ success: false, message: error.message });
   }
-
-  const folder = normalizeItem({
-    id: createId('folder'),
-    parent_id: normalizedParentId,
-    name: folderName,
-    is_dir: true,
-    kind: 'folder',
-    createdAt: new Date().toISOString(),
-  });
-
-  items.push(folder);
-  writeImportedItems(items);
-
-  res.status(201).json({ success: true, folder });
 });
 
-app.post('/api/items/move', (req, res) => {
+app.post('/api/items/move', async (req, res) => {
   const { item_id, parent_id = 0, authKey } = req.body || {};
 
-  if (authKey && authKey !== ADMIN_SECRET) {
+  if (!requireAdminSecret(authKey)) {
     return res.status(401).json({ success: false, message: '管理密钥错误' });
   }
 
   const targetParentId = normalizeParentId(parent_id);
-  const items = readImportedItems();
-  const item = items.find((entry) => String(entry.id) === String(item_id));
 
-  if (!item) {
-    return res.status(404).json({ success: false, message: '目标数据不存在' });
+  try {
+    const item = await withWriteLock(() => {
+      const items = readImportedItems();
+      const target = items.find((entry) => String(entry.id) === String(item_id));
+
+      if (!target) {
+        const err = new Error('目标数据不存在');
+        err.statusCode = 404;
+        throw err;
+      }
+
+      if (String(target.id) === String(targetParentId)) {
+        const err = new Error('不能移动到自身');
+        err.statusCode = 400;
+        throw err;
+      }
+
+      if (target.is_dir) {
+        const descendantIds = collectDescendantIds(items, target.id);
+        if (descendantIds.has(String(targetParentId))) {
+          const err = new Error('不能将文件夹移动到其子目录中');
+          err.statusCode = 400;
+          throw err;
+        }
+      }
+
+      target.parent_id = targetParentId;
+      writeImportedItems(items);
+      return target;
+    });
+    res.json({ success: true, item });
+  } catch (error) {
+    const status = error.statusCode || 500;
+    res.status(status).json({ success: false, message: error.message });
   }
-
-  if (String(item.id) === String(targetParentId)) {
-    return res.status(400).json({ success: false, message: '不能移动到自身' });
-  }
-
-  if (item.is_dir) {
-    const descendantIds = collectDescendantIds(items, item.id);
-    if (descendantIds.has(String(targetParentId))) {
-      return res.status(400).json({ success: false, message: '不能将文件夹移动到其子目录中' });
-    }
-  }
-
-  item.parent_id = targetParentId;
-  writeImportedItems(items);
-
-  res.json({ success: true, item });
 });
 
-app.post('/api/admin', (req, res) => {
+app.post('/api/admin', async (req, res) => {
   const { action, authKey, items = [], parent_id = 0 } = req.body || {};
 
-  if (authKey && authKey !== ADMIN_SECRET) {
+  if (!requireAdminSecret(authKey)) {
     return res.status(401).json({ success: false, message: '管理密钥错误' });
   }
 
@@ -300,18 +335,19 @@ app.post('/api/admin', (req, res) => {
       return res.status(400).json({ success: false, message: '无有效文件数据' });
     }
 
-    db.batch(normalized)
-      .then(() => {
-        res.json({
-          success: true,
-          count: normalized.length,
-          message: `成功导入 ${normalized.length} 个资源`,
-        });
-      })
-      .catch((error) => {
-        res.status(500).json({ success: false, message: '批量导入失败', error: error.message });
+    try {
+      await withWriteLock(() => {
+        const existing = readImportedItems();
+        writeImportedItems([...existing, ...normalized]);
       });
-
+      res.json({
+        success: true,
+        count: normalized.length,
+        message: `成功导入 ${normalized.length} 个资源`,
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: '批量导入失败', error: error.message });
+    }
     return;
   }
 
@@ -322,9 +358,9 @@ app.post('/api/admin', (req, res) => {
    writing the file once also means a partial failure cannot leave the data in a
    half-updated state between calls. Deleting a folder still removes its whole
    subtree. Unknown ids are reported rather than failing the whole batch. */
-app.post('/api/items/batch-delete', (req, res) => {
+app.post('/api/items/batch-delete', async (req, res) => {
   const { authKey, ids } = req.body || {};
-  if (authKey && authKey !== ADMIN_SECRET) {
+  if (!requireAdminSecret(authKey)) {
     return res.status(401).json({ success: false, message: '管理密钥错误' });
   }
 
@@ -332,71 +368,96 @@ app.post('/api/items/batch-delete', (req, res) => {
     return res.status(400).json({ success: false, message: '未选择要删除的项' });
   }
 
-  const items = readImportedItems();
-  const wanted = new Set(ids.map((id) => String(id)));
-  const removeIds = new Set();
-  const notFound = [];
+  try {
+    const result = await withWriteLock(() => {
+      const items = readImportedItems();
+      const wanted = new Set(ids.map((id) => String(id)));
+      const removeIds = new Set();
+      const notFound = [];
 
-  for (const id of wanted) {
-    const target = items.find((entry) => String(entry.id) === id);
-    if (!target) {
-      notFound.push(id);
-      continue;
-    }
-    removeIds.add(String(target.id));
-    if (target.is_dir) {
-      collectDescendantIds(items, target.id, removeIds);
-    }
+      for (const id of wanted) {
+        const target = items.find((entry) => String(entry.id) === id);
+        if (!target) {
+          notFound.push(id);
+          continue;
+        }
+        removeIds.add(String(target.id));
+        if (target.is_dir) {
+          collectDescendantIds(items, target.id, removeIds);
+        }
+      }
+
+      if (removeIds.size === 0) {
+        const err = new Error('所选数据已不存在');
+        err.statusCode = 404;
+        err.notFound = notFound;
+        throw err;
+      }
+
+      const remaining = items.filter((entry) => !removeIds.has(String(entry.id)));
+      writeImportedItems(remaining);
+      return { wantedSize: wanted.size, removeIds: [...removeIds], notFound };
+    });
+
+    res.json({
+      success: true,
+      requested: result.wantedSize,
+      removed: result.removeIds,
+      removedCount: result.removeIds.length,
+      notFound: result.notFound,
+      message: `已删除 ${result.removeIds.length} 项`,
+    });
+  } catch (error) {
+    const status = error.statusCode || 500;
+    res.status(status).json({
+      success: false,
+      message: error.message,
+      notFound: error.notFound,
+    });
   }
-
-  if (removeIds.size === 0) {
-    return res.status(404).json({ success: false, message: '所选数据已不存在', notFound });
-  }
-
-  const remaining = items.filter((entry) => !removeIds.has(String(entry.id)));
-  writeImportedItems(remaining);
-
-  res.json({
-    success: true,
-    requested: wanted.size,
-    removed: [...removeIds],
-    removedCount: removeIds.size,
-    notFound,
-    message: `已删除 ${removeIds.size} 项`,
-  });
 });
 
-app.delete('/api/items/:id', (req, res) => {
+app.delete('/api/items/:id', async (req, res) => {
   const { authKey } = req.body || {};
-  if (authKey && authKey !== ADMIN_SECRET) {
+  if (!requireAdminSecret(authKey)) {
     return res.status(401).json({ success: false, message: '管理密钥错误' });
   }
 
   const { id } = req.params;
-  const items = readImportedItems();
-  const target = items.find((entry) => String(entry.id) === String(id));
 
-  if (!target) {
-    return res.status(404).json({ success: false, message: '数据不存在' });
+  try {
+    const removed = await withWriteLock(() => {
+      const items = readImportedItems();
+      const target = items.find((entry) => String(entry.id) === String(id));
+
+      if (!target) {
+        const err = new Error('数据不存在');
+        err.statusCode = 404;
+        throw err;
+      }
+
+      const removeIds = new Set([String(target.id)]);
+      if (target.is_dir) {
+        collectDescendantIds(items, target.id, removeIds);
+      }
+
+      const remaining = items.filter((entry) => !removeIds.has(String(entry.id)));
+      writeImportedItems(remaining);
+      return [...removeIds];
+    });
+    res.json({ success: true, removed, message: '删除成功' });
+  } catch (error) {
+    const status = error.statusCode || 500;
+    res.status(status).json({ success: false, message: error.message });
   }
-
-  const removeIds = new Set([String(target.id)]);
-  if (target.is_dir) {
-    collectDescendantIds(items, target.id, removeIds);
-  }
-
-  const remaining = items.filter((entry) => !removeIds.has(String(entry.id)));
-
-  writeImportedItems(remaining);
-  res.json({ success: true, removed: [...removeIds], message: '删除成功' });
 });
 
 /* Rename a file or a folder. This route was missing entirely — the admin has
    been calling PATCH all along, so renaming only ever worked on Cloudflare and
    silently 404'd locally. Nothing here is folder-specific. */
-app.patch('/api/items/:id', (req, res) => {
+app.patch('/api/items/:id', async (req, res) => {
   const { authKey, name } = req.body || {};
-  if (authKey && authKey !== ADMIN_SECRET) {
+  if (!requireAdminSecret(authKey)) {
     return res.status(401).json({ success: false, message: '管理密钥错误' });
   }
 
@@ -406,21 +467,32 @@ app.patch('/api/items/:id', (req, res) => {
   }
 
   const { id } = req.params;
-  const items = readImportedItems();
-  const target = items.find((entry) => String(entry.id) === String(id));
 
-  if (!target) {
-    return res.status(404).json({ success: false, message: '数据不存在' });
+  try {
+    const updated = await withWriteLock(() => {
+      const items = readImportedItems();
+      const target = items.find((entry) => String(entry.id) === String(id));
+
+      if (!target) {
+        const err = new Error('数据不存在');
+        err.statusCode = 404;
+        throw err;
+      }
+
+      target.name = nextName;
+      writeImportedItems(items);
+      return target;
+    });
+
+    res.json({
+      success: true,
+      message: `${updated.is_dir ? '文件夹' : '文件'}重命名成功`,
+      name: nextName,
+    });
+  } catch (error) {
+    const status = error.statusCode || 500;
+    res.status(status).json({ success: false, message: error.message });
   }
-
-  target.name = nextName;
-  writeImportedItems(items);
-
-  res.json({
-    success: true,
-    message: `${target.is_dir ? '文件夹' : '文件'}重命名成功`,
-    name: nextName,
-  });
 });
 
 /* SPA fallback for any other path. The versioned / and /admin routes above

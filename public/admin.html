@@ -145,6 +145,18 @@
       </div>
     </div>
 
+    <div id="renameModal" class="folder-modal hidden" aria-hidden="true">
+      <div class="folder-modal-panel">
+        <h3 id="renameModalTitle">重命名</h3>
+        <label for="renameModalInput" class="folder-modal-label">请输入新名称</label>
+        <input id="renameModalInput" type="text" maxlength="80" placeholder="新名称" />
+        <div class="folder-modal-actions">
+          <button id="renameModalCancel" type="button" class="secondary">取消</button>
+          <button id="renameModalConfirm" type="button" class="primary">确认重命名</button>
+        </div>
+      </div>
+    </div>
+
     <script src="/parser.js"></script>
     <script src="/admin.js"></script>
   </body>

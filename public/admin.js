@@ -31,6 +31,12 @@ const batchDeleteList = document.getElementById('batchDeleteList');
 const batchDeleteCancel = document.getElementById('batchDeleteCancel');
 const batchDeleteConfirm = document.getElementById('batchDeleteConfirm');
 
+const renameModal = document.getElementById('renameModal');
+const renameModalTitle = document.getElementById('renameModalTitle');
+const renameModalInput = document.getElementById('renameModalInput');
+const renameModalCancel = document.getElementById('renameModalCancel');
+const renameModalConfirm = document.getElementById('renameModalConfirm');
+
 /* Ids ticked in the file table. Kept in a Set so the selection survives a
    re-render trigger and can be diffed cheaply. */
 const selectedItemIds = new Set();
@@ -72,12 +78,7 @@ if (adminShell) {
 }
 
 function getAdminSecret() {
-  const defaultSecret = 'admin123';
-  const savedSecret = localStorage.getItem('admin_key') || defaultSecret;
-
-  adminSecretInput.value = savedSecret;
-  localStorage.setItem('admin_key', savedSecret);
-  return savedSecret;
+  return adminSecretInput ? adminSecretInput.value.trim() : '';
 }
 
 function showMessage(text, type = 'success') {
@@ -369,9 +370,9 @@ function renderFolderItems() {
       const itemId = button.dataset.renameId;
       const item = allItems.find((entry) => String(entry.id) === String(itemId));
       const label = item && item.is_dir ? '文件夹' : '文件';
-      const nextName = window.prompt(`请输入新的${label}名称`, (item && item.name) || '');
+      const nextName = await openRenameModal(label, (item && item.name) || '');
 
-      if (nextName === null || !nextName.trim()) {
+      if (!nextName || !nextName.trim()) {
         return;
       }
 
@@ -612,6 +613,78 @@ if (batchDeleteModal) {
     }
   });
 }
+
+/* ---------- rename modal ------------------------------------------------
+   Promise-based: openRenameModal() returns a promise that resolves with the
+   trimmed new name when confirmed, or null when cancelled / dismissed.    */
+
+let _renameResolve = null;
+
+function openRenameModal(typeLabel, currentName) {
+  return new Promise((resolve) => {
+    _renameResolve = resolve;
+    if (renameModalTitle) {
+      renameModalTitle.textContent = `重命名${typeLabel}`;
+    }
+    if (renameModalInput) {
+      renameModalInput.value = currentName || '';
+    }
+    if (renameModal) {
+      renameModal.classList.add('visible');
+      renameModal.setAttribute('aria-hidden', 'false');
+    }
+    requestAnimationFrame(() => {
+      if (renameModalInput) {
+        renameModalInput.focus();
+        renameModalInput.select();
+      }
+    });
+  });
+}
+
+function confirmRenameModal() {
+  const value = renameModalInput ? renameModalInput.value.trim() : '';
+  closeRenameModal(value || null);
+}
+
+function closeRenameModal(value = null) {
+  if (renameModal) {
+    renameModal.classList.remove('visible');
+    renameModal.setAttribute('aria-hidden', 'true');
+  }
+  if (_renameResolve) {
+    _renameResolve(value);
+    _renameResolve = null;
+  }
+}
+
+if (renameModalConfirm) {
+  renameModalConfirm.addEventListener('click', confirmRenameModal);
+}
+
+if (renameModalCancel) {
+  renameModalCancel.addEventListener('click', () => closeRenameModal(null));
+}
+
+if (renameModalInput) {
+  renameModalInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      confirmRenameModal();
+    }
+    if (event.key === 'Escape') {
+      closeRenameModal(null);
+    }
+  });
+}
+
+if (renameModal) {
+  renameModal.addEventListener('click', (event) => {
+    if (event.target === renameModal) {
+      closeRenameModal(null);
+    }
+  });
+}
+/* ----------------------------------------------------------------------- */
 
 function buildFolderOptions(excludeId) {
   const folders = allItems.filter((item) => item.is_dir && String(item.id) !== String(excludeId));
@@ -987,6 +1060,10 @@ document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') {
     return;
   }
+  if (renameModal && renameModal.classList.contains('visible')) {
+    closeRenameModal(null);
+    return;
+  }
   if (batchDeleteModal && batchDeleteModal.classList.contains('visible')) {
     closeBatchDeleteModal();
     return;
@@ -1048,7 +1125,18 @@ if (saveAnnouncementBtn) {
   saveAnnouncementBtn.addEventListener('click', saveAnnouncementSettings);
 }
 
-getAdminSecret();
+// Restore the admin key from sessionStorage for convenience within the same
+// browser session. sessionStorage is cleared when the tab closes — unlike
+// localStorage it never silently persists between visits.
+if (adminSecretInput) {
+  const sessionKey = sessionStorage.getItem('admin_key_session');
+  if (sessionKey) {
+    adminSecretInput.value = sessionKey;
+  }
+  adminSecretInput.addEventListener('input', () => {
+    sessionStorage.setItem('admin_key_session', adminSecretInput.value);
+  });
+}
 loadThankYouEditor();
 loadAnnouncementEditor();
 fetchImportedItems();
