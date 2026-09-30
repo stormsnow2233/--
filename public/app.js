@@ -813,7 +813,28 @@ function initSiteTitle() {
     .catch(() => {});
 }
 
+const backToTopBtn = document.getElementById('backToTopBtn');
+
+function initBackToTop() {
+  if (!backToTopBtn) {
+    return;
+  }
+  const toggleVisibility = () => {
+    if (window.scrollY > 240) {
+      backToTopBtn.classList.add('is-visible');
+    } else {
+      backToTopBtn.classList.remove('is-visible');
+    }
+  };
+
+  window.addEventListener('scroll', toggleVisibility, { passive: true });
+  backToTopBtn.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
 initWallpaper();
+initBackToTop();
 initSiteTitle();
 fetchImportedItems();
 renderAnnouncementMarkdown(getAnnouncementMarkdown());
