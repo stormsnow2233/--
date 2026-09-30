@@ -88,46 +88,20 @@ function showMessage(text, type = 'success') {
   }
 }
 
-function parseThankYouText(rawText) {
-  const lines = String(rawText || '')
-    .split(/\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  return lines
-    .map((line) => {
-      const separatorIndex = line.indexOf('|');
-      const label = (separatorIndex === -1 ? line : line.slice(0, separatorIndex)).trim();
-      const url = separatorIndex === -1 ? '' : line.slice(separatorIndex + 1).trim();
-
-      if (!label) {
-        return null;
-      }
-
-      return { label, url };
-    })
-    .filter(Boolean);
-}
-
 function loadThankYouEditor() {
   if (!thankYouEditor) {
     return;
   }
 
+  const raw = localStorage.getItem('thank_you_markdown') || localStorage.getItem('thank_you_links') || '';
   try {
-    const raw = localStorage.getItem('thank_you_links');
-    const links = raw ? JSON.parse(raw) : [];
-    thankYouEditor.value = Array.isArray(links)
-      ? links.map((item) => {
-        if (!item || !item.label) {
-          return '';
-        }
-        return item.url ? `${item.label} | ${item.url}` : item.label;
-      }).filter(Boolean).join('\n')
-      : '';
-  } catch (error) {
-    thankYouEditor.value = '';
-  }
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      thankYouEditor.value = parsed.map((item) => item.url ? `- [${item.label}](${item.url})` : `- ${item.label}`).join('\n');
+      return;
+    }
+  } catch (error) {}
+  thankYouEditor.value = raw;
 }
 
 function saveThankYouSettings() {
@@ -135,9 +109,10 @@ function saveThankYouSettings() {
     return;
   }
 
-  const links = parseThankYouText(thankYouEditor.value);
-  localStorage.setItem('thank_you_links', JSON.stringify(links));
-  showMessage(links.length ? '感谢名单已保存' : '感谢名单已清空', links.length ? 'success' : 'error');
+  const markdown = thankYouEditor.value.trim();
+  localStorage.setItem('thank_you_markdown', markdown);
+  localStorage.setItem('thank_you_links', markdown);
+  showMessage(markdown ? '感谢名单已保存' : '感谢名单已清空', markdown ? 'success' : 'error');
 }
 
 function loadAnnouncementEditor() {

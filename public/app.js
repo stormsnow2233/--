@@ -40,8 +40,6 @@ let allItems = [];
 let currentFolderId = 0;
 let currentPage = 1;
 const PAGE_SIZE = 13;
-let thankYouPage = 1;
-const THANK_YOU_PAGE_SIZE = 7;
 
 function prefersReducedMotion() {
   return typeof window.matchMedia === 'function'
@@ -498,138 +496,7 @@ if (backFolderBtn) {
   });
 }
 
-function getThankYouLinks() {
-  try {
-    const raw = localStorage.getItem(THANKS_KEY);
-    if (!raw) {
-      return [];
-    }
-
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter((item) => item && item.label) : [];
-  } catch (error) {
-    return [];
-  }
-}
-
-function renderThankYouList() {
-  if (!thankYouList) {
-    return;
-  }
-
-  const links = getThankYouLinks();
-
-  if (!links.length) {
-    thankYouList.innerHTML = '<p class="thank-you-empty">还没有设置感谢名单</p>';
-    if (thankYouPagination) {
-      thankYouPagination.innerHTML = '';
-      thankYouPagination.classList.remove('visible');
-    }
-    return;
-  }
-
-  const totalPages = Math.ceil(links.length / THANK_YOU_PAGE_SIZE);
-  thankYouPage = Math.min(Math.max(thankYouPage, 1), totalPages);
-  const pageLinks = links.slice((thankYouPage - 1) * THANK_YOU_PAGE_SIZE, thankYouPage * THANK_YOU_PAGE_SIZE);
-
-  thankYouList.innerHTML = pageLinks
-    .map((item, index) => {
-      const style = ` style="--item-index: ${index};"`;
-
-      if (item.url) {
-        return `
-          <a class="thank-you-item" href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer"${style}>
-            ${escapeHtml(item.label)}
-          </a>
-        `;
-      }
-
-      return `
-        <div class="thank-you-item"${style}>
-          ${escapeHtml(item.label)}
-        </div>
-      `;
-    })
-    .join('');
-
-  if (!thankYouPagination) {
-    return;
-  }
-
-  if (totalPages <= 1) {
-    thankYouPagination.innerHTML = '';
-    thankYouPagination.classList.remove('visible');
-    return;
-  }
-
-  thankYouPagination.innerHTML = `
-    <button type="button" class="thank-you-page-button" data-thank-you-page="${thankYouPage - 1}" ${thankYouPage === 1 ? 'disabled' : ''} aria-label="上一页"><i class="fa-solid fa-chevron-left"></i></button>
-    <span>${thankYouPage} / ${totalPages}</span>
-    <button type="button" class="thank-you-page-button" data-thank-you-page="${thankYouPage + 1}" ${thankYouPage === totalPages ? 'disabled' : ''} aria-label="下一页"><i class="fa-solid fa-chevron-right"></i></button>
-  `;
-  thankYouPagination.classList.add('visible');
-  thankYouPagination.querySelectorAll('[data-thank-you-page]:not([disabled])').forEach((button) => {
-    button.addEventListener('click', () => {
-      thankYouPage = Number(button.dataset.thankYouPage);
-      renderThankYouList();
-    });
-  });
-}
-
-function openThankYouModal() {
-  if (!thankYouModal) {
-    return;
-  }
-
-  if (closeTimer !== null) {
-    clearTimeout(closeTimer);
-    closeTimer = null;
-  }
-
-  thankYouPage = 1;
-  renderThankYouList();
-  thankYouModal.classList.remove('is-opening');
-  thankYouModal.classList.remove('is-closing');
-  thankYouModal.classList.remove('hidden');
-  thankYouModal.setAttribute('aria-hidden', 'false');
-  void thankYouModal.offsetWidth;
-  requestAnimationFrame(() => {
-    thankYouModal.classList.add('is-opening');
-  });
-}
-
-function closeThankYouModal() {
-  if (!thankYouModal || thankYouModal.classList.contains('hidden')) {
-    return;
-  }
-
-  if (prefersReducedMotion()) {
-    hideThankYouModal();
-    return;
-  }
-
-  thankYouModal.classList.remove('is-opening');
-  thankYouModal.classList.add('is-closing');
-  thankYouModal.setAttribute('aria-hidden', 'true');
-  closeTimer = window.setTimeout(hideThankYouModal, 190);
-}
-
-function hideThankYouModal() {
-  if (closeTimer !== null) {
-    clearTimeout(closeTimer);
-    closeTimer = null;
-  }
-  thankYouModal.classList.add('hidden');
-  thankYouModal.classList.remove('is-opening');
-  thankYouModal.classList.remove('is-closing');
-  thankYouModal.setAttribute('aria-hidden', 'true');
-}
-
-function renderAnnouncementMarkdown(markdown) {
-  if (!announcementContent) {
-    return;
-  }
-
+function parseSimpleMarkdown(markdown) {
   const inlineMarkdown = (value) => value
     .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
@@ -672,7 +539,87 @@ function renderAnnouncementMarkdown(markdown) {
   });
 
   closeList();
-  announcementContent.innerHTML = html.join('');
+  return html.join('');
+}
+
+function getThankYouMarkdown() {
+  const raw = localStorage.getItem('thank_you_markdown') || localStorage.getItem(THANKS_KEY);
+  if (!raw) {
+    return '还没有设置感谢名单';
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      if (!parsed.length) {
+        return '还没有设置感谢名单';
+      }
+      return parsed.map((item) => item.url ? `- [${item.label}](${item.url})` : `- ${item.label}`).join('\n');
+    }
+  } catch (error) {}
+  return raw;
+}
+
+function renderThankYouList() {
+  if (!thankYouList) {
+    return;
+  }
+  const markdown = getThankYouMarkdown();
+  thankYouList.innerHTML = parseSimpleMarkdown(markdown);
+}
+
+function openThankYouModal() {
+  if (!thankYouModal) {
+    return;
+  }
+
+  if (closeTimer !== null) {
+    clearTimeout(closeTimer);
+    closeTimer = null;
+  }
+
+  renderThankYouList();
+  thankYouModal.classList.remove('is-opening');
+  thankYouModal.classList.remove('is-closing');
+  thankYouModal.classList.remove('hidden');
+  thankYouModal.setAttribute('aria-hidden', 'false');
+  void thankYouModal.offsetWidth;
+  requestAnimationFrame(() => {
+    thankYouModal.classList.add('is-opening');
+  });
+}
+
+function closeThankYouModal() {
+  if (!thankYouModal || thankYouModal.classList.contains('hidden')) {
+    return;
+  }
+
+  if (prefersReducedMotion()) {
+    hideThankYouModal();
+    return;
+  }
+
+  thankYouModal.classList.remove('is-opening');
+  thankYouModal.classList.add('is-closing');
+  thankYouModal.setAttribute('aria-hidden', 'true');
+  closeTimer = window.setTimeout(hideThankYouModal, 190);
+}
+
+function hideThankYouModal() {
+  if (closeTimer !== null) {
+    clearTimeout(closeTimer);
+    closeTimer = null;
+  }
+  thankYouModal.classList.add('hidden');
+  thankYouModal.classList.remove('is-opening');
+  thankYouModal.classList.remove('is-closing');
+  thankYouModal.setAttribute('aria-hidden', 'true');
+}
+
+function renderAnnouncementMarkdown(markdown) {
+  if (!announcementContent) {
+    return;
+  }
+  announcementContent.innerHTML = parseSimpleMarkdown(markdown);
 }
 
 function getAnnouncementMarkdown() {
