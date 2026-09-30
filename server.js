@@ -6,6 +6,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const dataDir = path.join(__dirname, 'data');
 const importedItemsFile = path.join(dataDir, 'imported-items.json');
+const settingsFile = path.join(dataDir, 'settings.json');
 const ADMIN_SECRET = process.env.ADMIN_SECRET || 'admin123';
 
 if (!process.env.ADMIN_SECRET) {
@@ -493,6 +494,41 @@ app.patch('/api/items/:id', async (req, res) => {
     const status = error.statusCode || 500;
     res.status(status).json({ success: false, message: error.message });
   }
+});
+
+function readSettings() {
+  if (!fs.existsSync(settingsFile)) {
+    return { siteTitle: 'K50电竞版ROM小站' };
+  }
+  try {
+    const content = fs.readFileSync(settingsFile, 'utf-8');
+    return JSON.parse(content.replace(/^\uFEFF/, ''));
+  } catch {
+    return { siteTitle: 'K50电竞版ROM小站' };
+  }
+}
+
+function writeSettings(settings) {
+  fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2), 'utf-8');
+}
+
+app.get('/api/settings', (req, res) => {
+  res.json({ success: true, settings: readSettings() });
+});
+
+app.post('/api/settings', (req, res) => {
+  const { authKey, siteTitle } = req.body || {};
+  if (!requireAdminSecret(authKey)) {
+    return res.status(401).json({ success: false, message: '管理密钥错误' });
+  }
+
+  const current = readSettings();
+  if (siteTitle !== undefined) {
+    current.siteTitle = String(siteTitle).trim() || 'K50电竞版ROM小站';
+  }
+
+  writeSettings(current);
+  res.json({ success: true, message: '站名更新成功', settings: current });
 });
 
 /* SPA fallback for any other path. The versioned / and /admin routes above

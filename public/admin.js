@@ -17,6 +17,8 @@ const createFolderCancel = document.getElementById('createFolderCancel');
 const backFolderBtn = document.getElementById('backFolderBtn');
 const thankYouEditor = document.getElementById('thankYouEditor');
 const saveThankYouBtn = document.getElementById('saveThankYouBtn');
+const siteTitleInput = document.getElementById('siteTitleInput');
+const saveSiteTitleBtn = document.getElementById('saveSiteTitleBtn');
 const announcementEditor = document.getElementById('announcementEditor');
 const saveAnnouncementBtn = document.getElementById('saveAnnouncementBtn');
 const batchBar = document.getElementById('batchBar');
@@ -113,6 +115,54 @@ function saveThankYouSettings() {
   localStorage.setItem('thank_you_markdown', markdown);
   localStorage.setItem('thank_you_links', markdown);
   showMessage(markdown ? '感谢名单已保存' : '感谢名单已清空', markdown ? 'success' : 'error');
+}
+
+const SITE_TITLE_KEY = 'site_title';
+const DEFAULT_SITE_TITLE = 'K50电竞版ROM小站';
+
+async function loadSiteTitleEditor() {
+  if (!siteTitleInput) {
+    return;
+  }
+  siteTitleInput.value = localStorage.getItem(SITE_TITLE_KEY) || DEFAULT_SITE_TITLE;
+  try {
+    const res = await fetch('/api/settings', { cache: 'no-store' });
+    const data = await res.json();
+    if (data?.settings?.siteTitle) {
+      siteTitleInput.value = data.settings.siteTitle;
+      localStorage.setItem(SITE_TITLE_KEY, data.settings.siteTitle);
+    }
+  } catch (error) {}
+}
+
+async function saveSiteTitleSettings() {
+  if (!siteTitleInput) {
+    return;
+  }
+
+  const title = siteTitleInput.value.trim();
+  if (!title) {
+    showMessage('站名不能为空', 'error');
+    return;
+  }
+
+  localStorage.setItem(SITE_TITLE_KEY, title);
+
+  try {
+    const adminSecret = getAdminSecret();
+    const res = await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ authKey: adminSecret, siteTitle: title }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showMessage(data.message || '保存失败', 'error');
+      return;
+    }
+  } catch (error) {}
+
+  showMessage('站名已保存并生效', 'success');
 }
 
 function loadAnnouncementEditor() {
@@ -1096,6 +1146,10 @@ if (saveThankYouBtn) {
   saveThankYouBtn.addEventListener('click', saveThankYouSettings);
 }
 
+if (saveSiteTitleBtn) {
+  saveSiteTitleBtn.addEventListener('click', saveSiteTitleSettings);
+}
+
 if (saveAnnouncementBtn) {
   saveAnnouncementBtn.addEventListener('click', saveAnnouncementSettings);
 }
@@ -1112,6 +1166,7 @@ if (adminSecretInput) {
     sessionStorage.setItem('admin_key_session', adminSecretInput.value);
   });
 }
+loadSiteTitleEditor();
 loadThankYouEditor();
 loadAnnouncementEditor();
 fetchImportedItems();

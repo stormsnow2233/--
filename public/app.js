@@ -653,6 +653,34 @@ if (refreshBtn) {
   refreshBtn.addEventListener('click', fetchImportedItems);
 }
 
+const SITE_TITLE_KEY = 'site_title';
+const DEFAULT_SITE_TITLE = 'K50电竞版ROM小站';
+
+function updateSiteTitle(title) {
+  const cleanTitle = String(title || '').trim() || DEFAULT_SITE_TITLE;
+  const brandText = document.querySelector('.brand-text');
+  if (brandText) {
+    brandText.textContent = cleanTitle;
+  }
+  document.title = `${cleanTitle} - 网盘资源库`;
+}
+
+function initSiteTitle() {
+  const cachedTitle = localStorage.getItem(SITE_TITLE_KEY) || DEFAULT_SITE_TITLE;
+  updateSiteTitle(cachedTitle);
+
+  fetch('/api/settings', { cache: 'no-store' })
+    .then((res) => res.json())
+    .then((data) => {
+      if (data?.settings?.siteTitle) {
+        localStorage.setItem(SITE_TITLE_KEY, data.settings.siteTitle);
+        updateSiteTitle(data.settings.siteTitle);
+      }
+    })
+    .catch(() => {});
+}
+
+initSiteTitle();
 fetchImportedItems();
 renderAnnouncementMarkdown(getAnnouncementMarkdown());
 renderThankYouCard();

@@ -86,3 +86,38 @@ export async function batchImport(env, items = []) {
   await env.DB.batch(statements);
   return normalized;
 }
+
+export async function ensureSettingsTable(env) {
+  const db = env?.DB;
+  if (!db) {
+    return;
+  }
+  await db
+    .prepare(`
+      CREATE TABLE IF NOT EXISTS site_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      )
+    `)
+    .run();
+}
+
+export async function getSetting(env, key) {
+  if (!env?.DB) {
+    return null;
+  }
+  await ensureSettingsTable(env);
+  const row = await env.DB.prepare('SELECT value FROM site_settings WHERE key = ?').bind(key).first();
+  return row ? row.value : null;
+}
+
+export async function setSetting(env, key, value) {
+  if (!env?.DB) {
+    return;
+  }
+  await ensureSettingsTable(env);
+  await env.DB.prepare(`
+    INSERT INTO site_settings (key, value) VALUES (?, ?)
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value
+  `).bind(key, value).run();
+}
