@@ -15,37 +15,75 @@ function jsonResponse(payload, status = 200) {
 export async function onRequestGet({ env }) {
   try {
     let siteTitle = DEFAULT_SITE_TITLE;
+    let thankYouMarkdown = '';
+    let announcementMarkdown = '';
+
     if (env?.DB) {
-      const val = await getSetting(env, 'siteTitle');
-      if (val) {
-        siteTitle = val;
+      const valTitle = await getSetting(env, 'siteTitle');
+      if (valTitle) {
+        siteTitle = valTitle;
+      }
+      const valThanks = await getSetting(env, 'thankYouMarkdown');
+      if (valThanks !== null && valThanks !== undefined) {
+        thankYouMarkdown = valThanks;
+      }
+      const valAnnounce = await getSetting(env, 'announcementMarkdown');
+      if (valAnnounce !== null && valAnnounce !== undefined) {
+        announcementMarkdown = valAnnounce;
       }
     }
-    return jsonResponse({ success: true, settings: { siteTitle } });
+
+    return jsonResponse({
+      success: true,
+      settings: { siteTitle, thankYouMarkdown, announcementMarkdown },
+    });
   } catch (error) {
-    return jsonResponse({ success: true, settings: { siteTitle: DEFAULT_SITE_TITLE } });
+    return jsonResponse({
+      success: true,
+      settings: { siteTitle: DEFAULT_SITE_TITLE, thankYouMarkdown: '', announcementMarkdown: '' },
+    });
   }
 }
 
 export async function onRequestPost({ request, env }) {
   try {
     const body = await request.json().catch(() => ({}));
-    const { authKey, siteTitle } = body || {};
+    const { authKey, siteTitle, thankYouMarkdown, announcementMarkdown } = body || {};
 
     if (!authKey || authKey !== (env?.ADMIN_SECRET || ADMIN_SECRET)) {
-      return jsonResponse({ success: false, message: '管理密钥错误' }, 401);
+      return jsonResponse({ success: false, message: '管理密钥错误或未提供' }, 401);
     }
 
-    const cleanTitle = String(siteTitle || '').trim() || DEFAULT_SITE_TITLE;
+    const updated = {};
 
-    if (env?.DB) {
-      await setSetting(env, 'siteTitle', cleanTitle);
+    if (siteTitle !== undefined) {
+      const cleanTitle = String(siteTitle || '').trim() || DEFAULT_SITE_TITLE;
+      if (env?.DB) {
+        await setSetting(env, 'siteTitle', cleanTitle);
+      }
+      updated.siteTitle = cleanTitle;
+    }
+
+    if (thankYouMarkdown !== undefined) {
+      const cleanThanks = String(thankYouMarkdown || '').trim();
+      if (env?.DB) {
+        await setSetting(env, 'thankYouMarkdown', cleanThanks);
+      }
+      updated.thankYouMarkdown = cleanThanks;
+    }
+
+    if (announcementMarkdown !== undefined) {
+      const cleanAnnounce = String(announcementMarkdown || '').trim();
+      if (env?.DB) {
+        await setSetting(env, 'announcementMarkdown', cleanAnnounce);
+      }
+      updated.announcementMarkdown = cleanAnnounce;
     }
 
     return jsonResponse({
       success: true,
-      message: '站名更新成功',
-      settings: { siteTitle: cleanTitle },
+      message: '设置更新成功',
+      settings: updated,
     });
   } catch (error) {
     return jsonResponse(

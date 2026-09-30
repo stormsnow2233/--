@@ -498,13 +498,26 @@ app.patch('/api/items/:id', async (req, res) => {
 
 function readSettings() {
   if (!fs.existsSync(settingsFile)) {
-    return { siteTitle: 'K50电竞版ROM小站' };
+    return {
+      siteTitle: 'K50电竞版ROM小站',
+      thankYouMarkdown: '',
+      announcementMarkdown: '',
+    };
   }
   try {
     const content = fs.readFileSync(settingsFile, 'utf-8');
-    return JSON.parse(content.replace(/^\uFEFF/, ''));
+    const parsed = JSON.parse(content.replace(/^\uFEFF/, ''));
+    return {
+      siteTitle: parsed.siteTitle || 'K50电竞版ROM小站',
+      thankYouMarkdown: parsed.thankYouMarkdown || '',
+      announcementMarkdown: parsed.announcementMarkdown || '',
+    };
   } catch {
-    return { siteTitle: 'K50电竞版ROM小站' };
+    return {
+      siteTitle: 'K50电竞版ROM小站',
+      thankYouMarkdown: '',
+      announcementMarkdown: '',
+    };
   }
 }
 
@@ -517,18 +530,24 @@ app.get('/api/settings', (req, res) => {
 });
 
 app.post('/api/settings', (req, res) => {
-  const { authKey, siteTitle } = req.body || {};
+  const { authKey, siteTitle, thankYouMarkdown, announcementMarkdown } = req.body || {};
   if (!requireAdminSecret(authKey)) {
-    return res.status(401).json({ success: false, message: '管理密钥错误' });
+    return res.status(401).json({ success: false, message: '管理密钥错误或未提供' });
   }
 
   const current = readSettings();
   if (siteTitle !== undefined) {
     current.siteTitle = String(siteTitle).trim() || 'K50电竞版ROM小站';
   }
+  if (thankYouMarkdown !== undefined) {
+    current.thankYouMarkdown = String(thankYouMarkdown).trim();
+  }
+  if (announcementMarkdown !== undefined) {
+    current.announcementMarkdown = String(announcementMarkdown).trim();
+  }
 
   writeSettings(current);
-  res.json({ success: true, message: '站名更新成功', settings: current });
+  res.json({ success: true, message: '设置保存成功', settings: current });
 });
 
 /* SPA fallback for any other path. The versioned / and /admin routes above

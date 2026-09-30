@@ -90,7 +90,7 @@ function showMessage(text, type = 'success') {
   }
 }
 
-function loadThankYouEditor() {
+async function loadThankYouEditor() {
   if (!thankYouEditor) {
     return;
   }
@@ -100,21 +100,61 @@ function loadThankYouEditor() {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
       thankYouEditor.value = parsed.map((item) => item.url ? `- [${item.label}](${item.url})` : `- ${item.label}`).join('\n');
-      return;
+    } else {
+      thankYouEditor.value = raw;
+    }
+  } catch (error) {
+    thankYouEditor.value = raw;
+  }
+
+  try {
+    const res = await fetch('/api/settings', { cache: 'no-store' });
+    const data = await res.json();
+    if (data?.settings?.thankYouMarkdown !== undefined && data.settings.thankYouMarkdown !== null) {
+      thankYouEditor.value = data.settings.thankYouMarkdown;
+      localStorage.setItem('thank_you_markdown', data.settings.thankYouMarkdown);
+      localStorage.setItem('thank_you_links', data.settings.thankYouMarkdown);
     }
   } catch (error) {}
-  thankYouEditor.value = raw;
 }
 
-function saveThankYouSettings() {
+async function saveThankYouSettings() {
   if (!thankYouEditor) {
     return;
   }
 
+  const adminSecret = getAdminSecret();
+  if (!adminSecret) {
+    showMessage('管理密钥不能为空，请输入管理密钥后再操作', 'error');
+    if (adminSecretInput) {
+      adminSecretInput.focus();
+    }
+    return;
+  }
+
   const markdown = thankYouEditor.value.trim();
-  localStorage.setItem('thank_you_markdown', markdown);
-  localStorage.setItem('thank_you_links', markdown);
-  showMessage(markdown ? '感谢名单已保存' : '感谢名单已清空', markdown ? 'success' : 'error');
+
+  try {
+    const res = await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ authKey: adminSecret, thankYouMarkdown: markdown }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      showMessage(data.message || '管理密钥错误，保存失败', 'error');
+      if (adminSecretInput) {
+        adminSecretInput.focus();
+      }
+      return;
+    }
+
+    localStorage.setItem('thank_you_markdown', markdown);
+    localStorage.setItem('thank_you_links', markdown);
+    showMessage(markdown ? '感谢名单已保存并生效' : '感谢名单已清空', 'success');
+  } catch (error) {
+    showMessage('网络错误，无法保存感谢名单', 'error');
+  }
 }
 
 const SITE_TITLE_KEY = 'site_title';
@@ -140,39 +180,69 @@ async function saveSiteTitleSettings() {
     return;
   }
 
+  const adminSecret = getAdminSecret();
+  if (!adminSecret) {
+    showMessage('管理密钥不能为空，请输入管理密钥', 'error');
+    if (adminSecretInput) {
+      adminSecretInput.focus();
+    }
+    return;
+  }
+
   const title = siteTitleInput.value.trim();
   if (!title) {
     showMessage('站名不能为空', 'error');
     return;
   }
 
-  localStorage.setItem(SITE_TITLE_KEY, title);
-
   try {
-    const adminSecret = getAdminSecret();
     const res = await fetch('/api/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ authKey: adminSecret, siteTitle: title }),
     });
     const data = await res.json();
-    if (!res.ok) {
-      showMessage(data.message || '保存失败', 'error');
+    if (!res.ok || !data.success) {
+      showMessage(data.message || '管理密钥错误，保存失败', 'error');
+      if (adminSecretInput) {
+        adminSecretInput.focus();
+      }
       return;
     }
-  } catch (error) {}
-
-  showMessage('站名已保存并生效', 'success');
-}
-
-function loadAnnouncementEditor() {
-  if (announcementEditor) {
-    announcementEditor.value = localStorage.getItem(ANNOUNCEMENT_KEY) || DEFAULT_ANNOUNCEMENT;
+    localStorage.setItem(SITE_TITLE_KEY, title);
+    showMessage('站名已保存并生效', 'success');
+  } catch (error) {
+    showMessage('网络错误，保存站名失败', 'error');
   }
 }
 
-function saveAnnouncementSettings() {
+async function loadAnnouncementEditor() {
   if (!announcementEditor) {
+    return;
+  }
+  announcementEditor.value = localStorage.getItem(ANNOUNCEMENT_KEY) || DEFAULT_ANNOUNCEMENT;
+
+  try {
+    const res = await fetch('/api/settings', { cache: 'no-store' });
+    const data = await res.json();
+    if (data?.settings?.announcementMarkdown) {
+      announcementEditor.value = data.settings.announcementMarkdown;
+      localStorage.setItem(ANNOUNCEMENT_KEY, data.settings.announcementMarkdown);
+    }
+  } catch (error) {}
+}
+
+async function saveAnnouncementSettings() {
+  if (!announcementEditor) {
+    return;
+  }
+
+  const adminSecret = getAdminSecret();
+  if (!adminSecret) {
+    showMessage('管理密钥不能为空，请输入管理密钥后再操作', 'error');
+    if (adminSecretInput) {
+      adminSecretInput.focus();
+    }
     return;
   }
 
@@ -182,8 +252,26 @@ function saveAnnouncementSettings() {
     return;
   }
 
-  localStorage.setItem(ANNOUNCEMENT_KEY, markdown);
-  showMessage('主页公告已保存', 'success');
+  try {
+    const res = await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ authKey: adminSecret, announcementMarkdown: markdown }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      showMessage(data.message || '管理密钥错误，保存失败', 'error');
+      if (adminSecretInput) {
+        adminSecretInput.focus();
+      }
+      return;
+    }
+
+    localStorage.setItem(ANNOUNCEMENT_KEY, markdown);
+    showMessage('主页公告已保存并全站生效', 'success');
+  } catch (error) {
+    showMessage('网络错误，无法保存主页公告', 'error');
+  }
 }
 
 function escapeHtml(value) {

@@ -798,16 +798,27 @@ function updateSiteTitle(title) {
   document.title = `${cleanTitle} - 网盘资源库`;
 }
 
-function initSiteTitle() {
+function initSiteSettings() {
   const cachedTitle = localStorage.getItem(SITE_TITLE_KEY) || DEFAULT_SITE_TITLE;
   updateSiteTitle(cachedTitle);
 
   fetch('/api/settings', { cache: 'no-store' })
     .then((res) => res.json())
     .then((data) => {
-      if (data?.settings?.siteTitle) {
-        localStorage.setItem(SITE_TITLE_KEY, data.settings.siteTitle);
-        updateSiteTitle(data.settings.siteTitle);
+      if (data?.settings) {
+        if (data.settings.siteTitle) {
+          localStorage.setItem(SITE_TITLE_KEY, data.settings.siteTitle);
+          updateSiteTitle(data.settings.siteTitle);
+        }
+        if (data.settings.thankYouMarkdown !== undefined && data.settings.thankYouMarkdown !== null) {
+          localStorage.setItem('thank_you_markdown', data.settings.thankYouMarkdown);
+          localStorage.setItem(THANKS_KEY, data.settings.thankYouMarkdown);
+          renderThankYouCard();
+        }
+        if (data.settings.announcementMarkdown) {
+          localStorage.setItem(ANNOUNCEMENT_KEY, data.settings.announcementMarkdown);
+          renderAnnouncementMarkdown(data.settings.announcementMarkdown);
+        }
       }
     })
     .catch(() => {});
@@ -835,7 +846,7 @@ function initBackToTop() {
 
 initWallpaper();
 initBackToTop();
-initSiteTitle();
+initSiteSettings();
 fetchImportedItems();
 renderAnnouncementMarkdown(getAnnouncementMarkdown());
 renderThankYouCard();
