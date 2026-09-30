@@ -528,14 +528,10 @@ button {
   opacity: 0.35;
 }
 
-/* Compact OpenList-style public file browser. */
-body {
-  background: #f7f8fa;
-}
-
+/* Compact OpenList-style public file browser (faithfully matched to yhcres.top). */
 .openlist-shell {
   display: block;
-  width: min(960px, calc(100% - 32px));
+  width: min(1040px, 100%);
   min-height: 0;
   margin: 0 auto;
   background: transparent;
@@ -546,28 +542,107 @@ body {
   backdrop-filter: none;
 }
 
-.site-header {
-  height: 112px;
+.content-panel {
+  display: block;
+  width: 100%;
+}
+
+/* ---------- Top Navbar / Breadcrumb Toolbar ---------- */
+.page-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 8px 16px;
+  background-color: rgba(255, 255, 255, 0.5) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.folder-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: wrap;
+  font-size: 14px;
+}
+
+.breadcrumb-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.breadcrumb-item:hover {
+  background: rgba(24, 144, 255, 0.12);
+  color: #1890ff;
+}
+
+.breadcrumb-home i {
+  color: #1890ff;
+  font-size: 15px;
+}
+
+.breadcrumb-separator {
+  display: inline-block;
+  margin: 0 4px;
+  color: #8b95a3;
+  user-select: none;
+  font-size: 13px;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolbar-search-wrap {
   position: relative;
+  display: flex;
+  align-items: center;
 }
 
-.site-header .brand-wrap {
-  padding: 0;
+.toolbar-search-wrap .search-icon {
+  position: absolute;
+  left: 10px;
+  color: #6b7280;
+  font-size: 13px;
+  pointer-events: none;
 }
 
-.site-header .brand-mark {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #8ff1dc, #43d6c7);
-  color: white;
-  font-size: 20px;
-  font-weight: 700;
-  transform: rotate(-15deg);
-  box-shadow: none;
+.resource-search-input {
+  height: 32px;
+  padding: 0 10px 0 28px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.35);
+  font-size: 13px;
+  font-weight: bold;
+  color: #1f2937;
+  outline: none;
+  width: 130px;
+  transition: width 0.22s ease, background 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.resource-search-input:focus {
+  width: 180px;
+  background: rgba(255, 255, 255, 0.85);
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.18);
 }
 
 .view-switcher {
@@ -578,236 +653,260 @@ body {
 
 .view-button,
 .icon-action {
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
   border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: #596273;
-  font-size: 17px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.35);
+  color: #4b5563;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s ease;
 }
 
 .view-button.active,
 .view-button:hover,
 .icon-action:hover {
-  background: #e0efff;
-  color: #1688ee;
+  background: rgba(24, 144, 255, 0.15);
+  color: #1890ff;
 }
 
-.content-panel {
-  display: block;
-  width: 100%;
-}
-
-.page-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.window-badge {
-  padding: 0;
-  gap: 4px;
-  border: 0;
-  background: transparent;
-  border-radius: 0;
-  color: #252a33;
-  font-size: 16px;
-  font-weight: 500;
-}
-
-.window-badge i {
-  color: #1a1f29;
-  margin-right: 2px;
-}
-
-.breadcrumb-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 4px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: #252a33;
-  font-size: inherit;
-  font-weight: inherit;
-  transition: background 0.2s ease, color 0.2s ease;
-}
-
-.breadcrumb-item:hover {
-  background: rgba(22, 141, 242, 0.1);
-  color: #168df2;
-}
-
-.breadcrumb-home i {
-  color: #1a1f29;
-}
-
-.breadcrumb-separator {
-  display: inline-block;
-  margin: 0 7px;
-  color: #8b95a3;
-  user-select: none;
-}
-
-.toolbar-actions {
-  display: flex;
-  gap: 4px;
-}
-
-.icon-action {
-  width: 32px;
-  height: 32px;
-  font-size: 14px;
-}
-
-.search-panel {
-  display: none;
-}
-
-/* Frosted content surface: the forest photo stays legible behind the UI while
-   the blur keeps text crisp. Rows and the header stay fully transparent so they
-   inherit this one surface instead of stacking their own white on top of it —
-   stacking would make the header visibly lighter than the rows. */
+/* ---------- File List Panel ---------- */
 .list-panel {
-  margin: 0;
-  border: 0;
-  border-radius: 14px;
-  background: var(--mo-surface);
-  backdrop-filter: blur(16px) saturate(150%);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
-  box-shadow: 0 10px 30px -8px rgba(37, 47, 64, 0.22);
+  margin: 0 0 14px 0;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 16px !important;
+  background-color: rgba(255, 255, 255, 0.5) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   overflow: hidden;
 }
 
-.list-header,
-.desktop-item {
-  grid-template-columns: minmax(0, 1fr) 100px 150px;
-  column-gap: 20px;
-}
-
 .list-header {
-  padding: 14px 15px;
-  background: transparent;
-  color: #657080;
-  font-size: 12px;
-  letter-spacing: 0;
-  text-transform: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px 180px;
+  align-items: center;
+  column-gap: 16px;
+  padding: 12px 18px;
+  background: rgba(255, 255, 255, 0.22);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+  color: #4b5563;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.list-header .col-name {
+  text-align: left;
+}
+.list-header .col-size {
+  text-align: right;
+}
+.list-header .col-date {
+  text-align: right;
+}
+
+.desktop-grid {
+  display: block;
 }
 
 .desktop-item {
-  min-height: 56px;
-  padding: 10px 15px;
-  border-bottom: 1px solid #f0f1f3;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px 180px;
+  align-items: center;
+  column-gap: 16px;
+  padding: 11px 18px;
+  min-height: 48px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.035);
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+
+.desktop-item:last-child {
+  border-bottom: none;
 }
 
 .desktop-item:hover {
-  background: #f7fbff;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.desktop-item:hover .desktop-name {
+  color: #1890ff;
 }
 
 .item-main {
-  gap: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
 
 .file-type-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 0;
-  background: transparent;
-}
-
-.file-type-icon i {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 17px;
+  flex-shrink: 0;
 }
 
-.icon-folder {
-  background: transparent;
-}
+.file-type-icon.icon-folder { color: #1890ff; }
+.file-type-icon.icon-excel { color: #10b981; }
+.file-type-icon.icon-word { color: #2563eb; }
+.file-type-icon.icon-ppt { color: #f97316; }
+.file-type-icon.icon-pdf { color: #ef4444; }
+.file-type-icon.icon-image { color: #06b6d4; }
+.file-type-icon.icon-video { color: #f43f5e; }
+.file-type-icon.icon-audio { color: #ec4899; }
+.file-type-icon.icon-apk { color: #22c55e; }
+.file-type-icon.icon-archive { color: #f59e0b; }
+.file-type-icon.icon-disk { color: #8b5cf6; }
+.file-type-icon.icon-code { color: #6366f1; }
+.file-type-icon.icon-file { color: #3b82f6; }
 
-.icon-folder i {
-  color: #168df2;
+.desktop-name-wrap {
+  min-width: 0;
 }
 
 .desktop-name {
-  font-size: 14px;
-  font-weight: 400;
+  font-size: 13.5px;
+  font-weight: bold;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.18s ease;
 }
 
-.list-size,
-.list-date {
-  font-size: 12px;
-  color: #5f6977;
+.list-size {
+  font-size: 12.5px;
+  color: #4b5563;
+  font-weight: bold;
   text-align: right;
 }
 
 .list-date {
+  font-size: 12.5px;
+  color: #4b5563;
+  font-weight: bold;
+  text-align: right;
   white-space: nowrap;
 }
 
 .empty-state {
-  height: 120px;
-  color: #8b95a3;
-  text-shadow: none;
-  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 44px 20px;
+  color: #6b7280;
+  text-align: center;
 }
 
+.empty-state i {
+  font-size: 36px;
+  margin-bottom: 12px;
+  color: #9ca3af;
+}
+
+.empty-title {
+  font-size: 15px;
+  font-weight: bold;
+  color: #374151;
+  margin: 0 0 6px;
+}
+
+.empty-hint {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0 0 14px;
+}
+
+.empty-action {
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(24, 144, 255, 0.3);
+  background: rgba(24, 144, 255, 0.1);
+  color: #1890ff;
+  font-weight: bold;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.empty-action:hover {
+  background: #1890ff;
+  color: #fff;
+}
+
+/* ---------- Grid Mode ---------- */
 .list-panel.grid-mode .list-header {
   display: none;
 }
 
 .list-panel.grid-mode .desktop-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 16px;
-  padding: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 14px;
+  padding: 18px;
 }
 
 .list-panel.grid-mode .desktop-item {
   display: flex;
-  min-height: 145px;
-  padding: 22px 18px;
-  border: 0;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  box-shadow: 0 5px 16px rgba(37, 47, 64, 0.08);
   flex-direction: column;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.4);
+  text-align: center;
+  transition: transform 0.2s ease, background 0.2s ease;
 }
 
-.list-panel.grid-mode .item-main {
-  display: block;
-  width: 100%;
+.list-panel.grid-mode .desktop-item:hover {
+  transform: translateY(-3px);
+  background: rgba(255, 255, 255, 0.7);
 }
 
 .list-panel.grid-mode .file-type-icon {
-  width: 52px;
-  height: 52px;
-  margin-bottom: 20px;
+  width: 44px;
+  height: 44px;
+  font-size: 36px;
+  margin-bottom: 10px;
 }
 
-.list-panel.grid-mode .file-type-icon i {
-  font-size: 44px;
+.list-panel.grid-mode .item-main {
+  flex-direction: column;
+  align-items: center;
 }
 
-.list-panel.grid-mode .list-size,
+.list-panel.grid-mode .desktop-name {
+  text-align: center;
+}
+
+.list-panel.grid-mode .list-size {
+  margin-top: 6px;
+  font-size: 11.5px;
+  text-align: center;
+}
+
 .list-panel.grid-mode .list-date {
   display: none;
 }
 
+/* ---------- Pagination ---------- */
 .pagination {
   display: none;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  min-height: 64px;
-  padding: 12px 16px;
-  border-top: 1px solid #f0f1f3;
-  background: rgba(250, 252, 255, 0.84);
+  gap: 8px;
+  padding: 14px 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .pagination.visible {
@@ -817,43 +916,43 @@ body {
 .page-numbers {
   display: flex;
   align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  justify-content: center;
+  gap: 4px;
 }
 
 .page-button {
-  min-width: 32px;
-  height: 32px;
+  min-width: 30px;
+  height: 30px;
   padding: 0 8px;
-  border: 1px solid transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 8px;
-  background: transparent;
-  color: #687386;
+  background: rgba(255, 255, 255, 0.4);
+  color: #374151;
   font-size: 13px;
-  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.18s ease;
 }
 
 .page-button:hover:not(:disabled) {
-  background: #e8f3ff;
-  color: #168df2;
-  transform: translateY(-2px);
+  background: rgba(24, 144, 255, 0.15);
+  color: #1890ff;
+  border-color: rgba(24, 144, 255, 0.3);
 }
 
 .page-button.active {
-  background: #168df2;
+  background: #1890ff;
   color: #fff;
-  box-shadow: 0 5px 12px rgba(22, 141, 242, 0.22);
+  border-color: #1890ff;
 }
 
 .page-button:disabled {
-  cursor: not-allowed;
   opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .page-arrow {
-  border-color: #e1e7f0;
-  background: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .thank-you-footer {
@@ -1418,49 +1517,50 @@ body {
    backdrop, and matches the frosted surfaces used elsewhere on the page. */
 /* ---------- thank-you bottom card (OpenList / yhcres.top style) ---------- */
 .thank-you-card {
-  margin-top: 18px;
-  margin-bottom: 36px;
-  padding: 28px 24px;
-  background: var(--mo-surface, rgba(255, 255, 255, 0.72));
-  backdrop-filter: blur(16px) saturate(150%);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, 0.65);
-  border-radius: 18px;
-  box-shadow: 0 10px 30px -8px rgba(37, 47, 64, 0.18);
+  margin-top: 14px;
+  margin-bottom: 30px;
+  padding: 24px 20px 22px;
+  background-color: rgba(255, 255, 255, 0.5) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   text-align: center;
   transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
 .thank-you-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 14px 36px -6px rgba(37, 47, 64, 0.22);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.08);
 }
 
 .thank-you-avatar {
-  width: 54px;
-  height: 54px;
-  margin: 0 auto 16px;
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.72);
+  border: 2px solid rgba(255, 255, 255, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.85);
-  border: 2px solid rgba(22, 141, 242, 0.25);
-  color: #1688ee;
-  font-size: 24px;
-  box-shadow: 0 6px 18px rgba(22, 141, 242, 0.15);
+  color: #1890ff;
+  font-size: 26px;
+  box-shadow: 0 4px 14px rgba(24, 144, 255, 0.16);
   transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease;
 }
 
 .thank-you-card:hover .thank-you-avatar {
-  transform: scale(1.08) rotate(6deg);
-  box-shadow: 0 8px 22px rgba(22, 141, 242, 0.25);
+  transform: scale(1.1) rotate(6deg);
+  box-shadow: 0 8px 24px rgba(24, 144, 255, 0.26);
 }
 
 .thank-you-card-body {
-  color: #4f5b6c;
-  font-size: 14px;
+  color: #374151;
+  font-size: 13.5px;
   line-height: 1.8;
+  font-weight: bold;
 }
 
 .thank-you-card-body h1,
@@ -1469,19 +1569,23 @@ body {
 .thank-you-card-body h4 {
   margin: 8px 0 6px;
   color: #1f2937;
-  font-weight: 700;
+  font-weight: bold;
 }
 
 .thank-you-card-body h2 {
-  font-size: 17px;
+  font-size: 18px;
 }
 
 .thank-you-card-body h3 {
+  font-size: 16px;
+}
+
+.thank-you-card-body h4 {
   font-size: 15px;
 }
 
 .thank-you-card-body p {
-  margin: 6px 0;
+  margin: 5px 0;
 }
 
 .thank-you-card-body ul {
@@ -1496,23 +1600,26 @@ body {
 }
 
 .thank-you-card-body a {
-  color: #1688ee;
-  font-weight: 600;
+  color: #1890ff;
+  font-weight: bold;
   text-decoration: none;
   transition: color 0.18s ease;
 }
 
 .thank-you-card-body a:hover {
   text-decoration: underline;
-  color: #0d6efd;
+  color: #096dd9;
 }
 
-.thank-you-card-body code {
-  padding: 2px 6px;
-  border-radius: 5px;
-  background: #eef4ff;
-  color: #4365ad;
+.thank-you-card-body code,
+.thank-you-card-body .thank-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(24, 144, 255, 0.12);
+  color: #1890ff;
   font-size: 12.5px;
+  font-weight: bold;
 }
 
 .thank-you-item {
@@ -1846,56 +1953,34 @@ input[data-field] {
   }
 }
 
-/* Final homepage presentation overrides. */
+/* Final homepage presentation overrides (Faithfully matched to yhcres.top & media_1790770137640.jpg). */
 body:has(.openlist-shell) {
-  background:
-    linear-gradient(rgba(247, 248, 250, 0.42), rgba(247, 248, 250, 0.62)),
-    url('https://bing.img.run/1920x1080.php') center / cover fixed no-repeat,
-    url('https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1920&q=80') center / cover fixed no-repeat;
+  min-height: 100vh;
+  margin: 0;
+  padding: 24px 16px 40px;
+  background: url("https://t.alcy.cc/pic/fj/53.webp") no-repeat center center fixed;
+  background-size: cover;
+  font-family: "LXGW WenKai", sans-serif !important;
+  font-weight: bold;
+}
+
+@media (max-width: 800px) {
+  body:has(.openlist-shell) {
+    background-image: url("https://img.091014.xyz/uploads/2026/04/18a6cc415fb540b5549.webp");
+    padding: 14px 10px 30px;
+  }
+}
+
+body:has(.openlist-shell) *,
+body:has(.openlist-shell) *::before,
+body:has(.openlist-shell) *::after {
+  font-family: "LXGW WenKai", sans-serif;
+  font-weight: bold;
 }
 
 body:has(.openlist-shell) .list-size,
 body:has(.openlist-shell) .list-date {
   display: block;
-}
-
-body:has(.openlist-shell) .list-panel.grid-mode .list-size {
-  display: block !important;
-  margin-top: 8px;
-  color: #6c7787;
-  text-align: left;
-  font-size: 11px;
-}
-
-body:has(.openlist-shell) .list-panel.grid-mode .list-size::before {
-  content: '大小：';
-}
-
-/* Scoped to grid mode: the earlier unconditional `!important` here forced the
-   size/date rows open in list mode on a phone as well. */
-@media (max-width: 700px) {
-  body:has(.openlist-shell) .list-panel.grid-mode .desktop-item .list-size,
-  body:has(.openlist-shell) .list-panel.grid-mode .desktop-item .list-date {
-    display: block !important;
-  }
-}
-
-/* Homepage showcase motion and announcement panel. */
-body:has(.openlist-shell)::before {
-  content: '';
-  position: fixed;
-  inset: -20%;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 18% 22%, rgba(126, 239, 216, 0.2), transparent 22%),
-    radial-gradient(circle at 86% 12%, rgba(109, 178, 255, 0.16), transparent 20%);
-  /* Two very slow, non-synchronised loops read as "flowing" rather than as an
-     animation you can catch repeating. Gemini keeps its ambient motion in the
-     tens of seconds for the same reason. */
-  animation:
-    atmosphereDrift 26s ease-in-out infinite alternate,
-    atmosphereBreathe 18s ease-in-out infinite;
-  z-index: -1;
 }
 
 /* `.header-tools` / `.announcement-button` / `.announcement-dot` and their

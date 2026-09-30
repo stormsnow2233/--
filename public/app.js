@@ -193,6 +193,10 @@ function getCurrentFolderPath() {
 function renderBreadcrumb() {
   const path = getCurrentFolderPath();
 
+  if (backFolderBtn) {
+    backFolderBtn.style.display = currentFolderId ? 'inline-flex' : 'none';
+  }
+
   if (!folderBreadcrumb) {
     return;
   }
@@ -235,12 +239,38 @@ function getItemIconClass(item) {
   const fileName = String(item?.name || '').toLowerCase();
   const ext = fileName.includes('.') ? fileName.split('.').pop() : '';
 
-  if (['zip', 'rar', '7z', 'tar', 'gz', 'tgz', 'bz2', 'xz', 'apk'].includes(ext)) {
+  if (['xls', 'xlsx', 'csv'].includes(ext)) {
+    return 'icon-excel';
+  }
+  if (['doc', 'docx'].includes(ext)) {
+    return 'icon-word';
+  }
+  if (['ppt', 'pptx'].includes(ext)) {
+    return 'icon-ppt';
+  }
+  if (['pdf'].includes(ext)) {
+    return 'icon-pdf';
+  }
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico'].includes(ext)) {
+    return 'icon-image';
+  }
+  if (['mp4', 'mkv', 'avi', 'mov', 'webm'].includes(ext)) {
+    return 'icon-video';
+  }
+  if (['mp3', 'flac', 'wav', 'aac', 'ogg'].includes(ext)) {
+    return 'icon-audio';
+  }
+  if (['apk'].includes(ext)) {
+    return 'icon-apk';
+  }
+  if (['zip', 'rar', '7z', 'tar', 'gz', 'tgz', 'bz2', 'xz'].includes(ext)) {
     return 'icon-archive';
   }
-
   if (['iso', 'img', 'bin', 'cue', 'dmg'].includes(ext)) {
     return 'icon-disk';
+  }
+  if (['txt', 'md', 'json', 'xml', 'yaml', 'yml', 'js', 'css', 'html'].includes(ext)) {
+    return 'icon-code';
   }
 
   return 'icon-file';
@@ -252,16 +282,41 @@ function getItemIconHtml(item) {
   if (iconClass === 'icon-folder') {
     return '<i class="fa-solid fa-folder"></i>';
   }
-
+  if (iconClass === 'icon-excel') {
+    return '<i class="fa-solid fa-file-excel"></i>';
+  }
+  if (iconClass === 'icon-word') {
+    return '<i class="fa-solid fa-file-word"></i>';
+  }
+  if (iconClass === 'icon-ppt') {
+    return '<i class="fa-solid fa-file-powerpoint"></i>';
+  }
+  if (iconClass === 'icon-pdf') {
+    return '<i class="fa-solid fa-file-pdf"></i>';
+  }
+  if (iconClass === 'icon-image') {
+    return '<i class="fa-solid fa-file-image"></i>';
+  }
+  if (iconClass === 'icon-video') {
+    return '<i class="fa-solid fa-file-video"></i>';
+  }
+  if (iconClass === 'icon-audio') {
+    return '<i class="fa-solid fa-file-audio"></i>';
+  }
+  if (iconClass === 'icon-apk') {
+    return '<i class="fa-brands fa-android"></i>';
+  }
   if (iconClass === 'icon-archive') {
     return '<i class="fa-solid fa-file-zipper"></i>';
   }
-
   if (iconClass === 'icon-disk') {
     return '<i class="fa-solid fa-compact-disc"></i>';
   }
+  if (iconClass === 'icon-code') {
+    return '<i class="fa-solid fa-file-code"></i>';
+  }
 
-  return '<i class="fa-regular fa-file-lines"></i>';
+  return '<i class="fa-solid fa-file"></i>';
 }
 
 function formatItemDate(value) {
@@ -274,7 +329,14 @@ function formatItemDate(value) {
     return '-';
   }
 
-  return date.toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-');
+  const pad = (n) => String(n).padStart(2, '0');
+  const y = date.getFullYear();
+  const m = pad(date.getMonth() + 1);
+  const d = pad(date.getDate());
+  const h = pad(date.getHours());
+  const min = pad(date.getMinutes());
+  const s = pad(date.getSeconds());
+  return `${y}-${m}-${d} ${h}:${min}:${s}`;
 }
 
 function renderPagination(totalPages) {
@@ -384,7 +446,7 @@ function renderDesktopItems(items) {
 
   desktopGrid.innerHTML = pageItems
     .map((item, index) => {
-      const sizeText = item.size ? String(item.size) : item.is_dir ? '目录' : '未知大小';
+      const sizeText = item.is_dir ? '-' : (item.size ? String(item.size) : '-');
       const animationIndex = Math.min(index, MOTION_STAGGER_CAP);
 
       return `
@@ -493,11 +555,20 @@ if (backFolderBtn) {
   });
 }
 
+const DEFAULT_THANK_YOU_MARKDOWN = `### 欢迎来到 网盘资源库
+
+专注优质资源与玩机刷机分享，免登录不限速下载。
+
+[点击查看使用说明与帮助](#)
+[本站基于 OpenList 风格架构](https://github.com/OpenList-Team/OpenList)`;
+
 function parseSimpleMarkdown(markdown) {
+  if (!markdown) return '';
   const inlineMarkdown = (value) => value
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+|#[^\s)]*)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>');
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\[(\d+)\]/g, '<span class="thank-tag">$1</span>');
 
   const lines = escapeHtml(markdown).split('\n');
   const html = [];
@@ -511,27 +582,29 @@ function parseSimpleMarkdown(markdown) {
   };
 
   lines.forEach((line) => {
-    if (/^[-*]\s+/.test(line)) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      closeList();
+      return;
+    }
+    if (/^[-*]\s+/.test(trimmed)) {
       if (!listOpen) {
         html.push('<ul>');
         listOpen = true;
       }
-      html.push(`<li>${inlineMarkdown(line.replace(/^[-*]\s+/, ''))}</li>`);
+      html.push(`<li>${inlineMarkdown(trimmed.replace(/^[-*]\s+/, ''))}</li>`);
       return;
     }
 
     closeList();
-    if (!line.trim()) {
-      return;
-    }
-    if (/^###\s+/.test(line)) {
-      html.push(`<h4>${inlineMarkdown(line.replace(/^###\s+/, ''))}</h4>`);
-    } else if (/^##\s+/.test(line)) {
-      html.push(`<h3>${inlineMarkdown(line.replace(/^##\s+/, ''))}</h3>`);
-    } else if (/^#\s+/.test(line)) {
-      html.push(`<h2>${inlineMarkdown(line.replace(/^#\s+/, ''))}</h2>`);
+    if (/^###\s+/.test(trimmed)) {
+      html.push(`<h4>${inlineMarkdown(trimmed.replace(/^###\s+/, ''))}</h4>`);
+    } else if (/^##\s+/.test(trimmed)) {
+      html.push(`<h3>${inlineMarkdown(trimmed.replace(/^##\s+/, ''))}</h3>`);
+    } else if (/^#\s+/.test(trimmed)) {
+      html.push(`<h2>${inlineMarkdown(trimmed.replace(/^#\s+/, ''))}</h2>`);
     } else {
-      html.push(`<p>${inlineMarkdown(line)}</p>`);
+      html.push(`<p>${inlineMarkdown(trimmed)}</p>`);
     }
   });
 
@@ -542,13 +615,13 @@ function parseSimpleMarkdown(markdown) {
 function getThankYouMarkdown() {
   const raw = localStorage.getItem('thank_you_markdown') || localStorage.getItem(THANKS_KEY);
   if (!raw) {
-    return '还没有设置感谢名单';
+    return DEFAULT_THANK_YOU_MARKDOWN;
   }
   try {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
       if (!parsed.length) {
-        return '还没有设置感谢名单';
+        return DEFAULT_THANK_YOU_MARKDOWN;
       }
       return parsed.map((item) => item.url ? `- [${item.label}](${item.url})` : `- ${item.label}`).join('\n');
     }
@@ -561,7 +634,7 @@ function renderThankYouCard() {
     return;
   }
   const markdown = getThankYouMarkdown();
-  if (!markdown || !markdown.trim() || markdown === '还没有设置感谢名单') {
+  if (!markdown || !markdown.trim()) {
     if (thankYouCard) {
       thankYouCard.style.display = 'none';
     }
