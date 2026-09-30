@@ -8,7 +8,7 @@
     <meta http-equiv="Expires" content="0" />
     <title>网盘资源库</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/styles.css?v=1.2.5" />
     <noscript>
       <style>
         /* Without scripting nothing lifts the first-paint gate. */
@@ -24,6 +24,7 @@
     </noscript>
   </head>
   <body>
+    <div id="wallpaperLayer" class="wallpaper-layer" aria-hidden="true"></div>
     <main class="openlist-shell">
       <header class="site-header">
         <div class="brand-wrap">
@@ -40,6 +41,7 @@
         <div class="page-toolbar">
           <div id="folderBreadcrumb" class="window-badge"><i class="fa-solid fa-house"></i> 首页</div>
           <div class="toolbar-actions">
+            <button id="changeWallpaperBtn" class="icon-action" type="button" title="切换壁纸"><i class="fa-solid fa-image"></i></button>
             <button id="backFolderBtn" class="icon-action" type="button" title="返回上级"><i class="fa-solid fa-arrow-left"></i></button>
             <button id="refreshBtn" class="icon-action" type="button" title="刷新"><i class="fa-solid fa-rotate-right"></i></button>
           </div>
@@ -82,6 +84,6 @@
       </div>
     </div>
 
-    <script src="/app.js"></script>
+    <script src="/app.js?v=1.2.5"></script>
   </body>
 </html>

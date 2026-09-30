@@ -13,6 +13,99 @@ const announcementModal = document.getElementById('announcementModal');
 const closeAnnouncementButton = document.getElementById('closeAnnouncement');
 const announcementContent = document.getElementById('announcementContent');
 
+const changeWallpaperBtn = document.getElementById('changeWallpaperBtn');
+const wallpaperLayer = document.getElementById('wallpaperLayer');
+
+const WALLPAPERS = [
+  'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1920&q=80', // Yosemite Valley lake & reflection
+  'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1920&q=80', // Alpine mountain peaks & sunset glow
+  'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1920&q=80', // Foggy morning valley & calm nature
+  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80', // Gentle turquoise tropical beach
+  'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1920&q=80', // Starry night over snowy peaks
+  'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1920&q=80', // Sunbeam forest trail
+  'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?auto=format&fit=crop&w=1920&q=80', // Lush rolling green hills & dramatic sky
+  'https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=1920&q=80', // Warm sunlight filtered through trees
+  'https://images.unsplash.com/photo-1426604966848-d7adac402bff?auto=format&fit=crop&w=1920&q=80', // Majestic Yosemite mountain cliffs
+  'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1920&q=80'  // Peaceful lake cottage under alps
+];
+
+const WALLPAPER_STORAGE_KEY = 'site_wallpaper_index';
+const WALLPAPER_INTERVAL_MS = 8 * 60 * 1000; // 8 minutes auto-rotation
+let currentWallpaperIdx = 0;
+let wallpaperTimer = null;
+
+function preloadWallpaper(url) {
+  if (!url) return;
+  const img = new Image();
+  img.src = url;
+}
+
+function setWallpaper(index, smooth = true) {
+  if (!wallpaperLayer || !WALLPAPERS.length) return;
+  currentWallpaperIdx = ((index % WALLPAPERS.length) + WALLPAPERS.length) % WALLPAPERS.length;
+  try {
+    localStorage.setItem(WALLPAPER_STORAGE_KEY, String(currentWallpaperIdx));
+  } catch (_) {}
+
+  const nextUrl = WALLPAPERS[currentWallpaperIdx];
+  if (!smooth || prefersReducedMotion()) {
+    wallpaperLayer.style.backgroundImage = `url('${nextUrl}')`;
+    preloadWallpaper(WALLPAPERS[(currentWallpaperIdx + 1) % WALLPAPERS.length]);
+    return;
+  }
+
+  const img = new Image();
+  img.onload = () => {
+    wallpaperLayer.style.opacity = '0.35';
+    setTimeout(() => {
+      wallpaperLayer.style.backgroundImage = `url('${nextUrl}')`;
+      wallpaperLayer.style.opacity = '1';
+      preloadWallpaper(WALLPAPERS[(currentWallpaperIdx + 1) % WALLPAPERS.length]);
+    }, 280);
+  };
+  img.onerror = () => {
+    wallpaperLayer.style.backgroundImage = `url('${nextUrl}')`;
+    wallpaperLayer.style.opacity = '1';
+  };
+  img.src = nextUrl;
+}
+
+function nextWallpaper(triggerButtonAnimation = false) {
+  if (triggerButtonAnimation && changeWallpaperBtn) {
+    changeWallpaperBtn.classList.add('is-rotating');
+    setTimeout(() => changeWallpaperBtn.classList.remove('is-rotating'), 600);
+  }
+  setWallpaper(currentWallpaperIdx + 1, true);
+}
+
+function initWallpaper() {
+  if (!wallpaperLayer) return;
+  let savedIdx = -1;
+  try {
+    const raw = localStorage.getItem(WALLPAPER_STORAGE_KEY);
+    if (raw !== null) {
+      savedIdx = parseInt(raw, 10);
+    }
+  } catch (_) {}
+
+  if (isNaN(savedIdx) || savedIdx < 0 || savedIdx >= WALLPAPERS.length) {
+    savedIdx = Math.floor(Math.random() * WALLPAPERS.length);
+  }
+  setWallpaper(savedIdx, false);
+
+  if (changeWallpaperBtn) {
+    changeWallpaperBtn.addEventListener('click', () => {
+      nextWallpaper(true);
+      if (wallpaperTimer) {
+        clearInterval(wallpaperTimer);
+        wallpaperTimer = setInterval(() => nextWallpaper(false), WALLPAPER_INTERVAL_MS);
+      }
+    });
+  }
+
+  wallpaperTimer = setInterval(() => nextWallpaper(false), WALLPAPER_INTERVAL_MS);
+}
+
 const MOTION_STAGGER_MS = 35;
 const MOTION_STAGGER_CAP = 12;
 const MOTION_BASE_MS = 300;
@@ -277,6 +370,44 @@ function formatItemDate(value) {
   return date.toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-');
 }
 
+let isPageSwitching = false;
+
+function goToPage(targetPage) {
+  if (isPageSwitching) {
+    return;
+  }
+  const totalPages = Math.ceil(itemsForCurrentView.length / PAGE_SIZE);
+  if (targetPage < 1 || targetPage > totalPages || targetPage === currentPage) {
+    return;
+  }
+
+  if (prefersReducedMotion() || !desktopGrid) {
+    currentPage = targetPage;
+    renderDesktopItems(itemsForCurrentView);
+    return;
+  }
+
+  isPageSwitching = true;
+  desktopGrid.classList.add('page-switching');
+
+  window.setTimeout(() => {
+    currentPage = targetPage;
+    renderDesktopItems(itemsForCurrentView);
+    desktopGrid.classList.remove('page-switching');
+    desktopGrid.classList.add('page-switched');
+
+    const listTop = listPanel ? listPanel.getBoundingClientRect().top + window.scrollY : 0;
+    if (window.scrollY > listTop + 100) {
+      window.scrollTo({ top: Math.max(0, listTop - 20), behavior: 'smooth' });
+    }
+
+    window.setTimeout(() => {
+      desktopGrid.classList.remove('page-switched');
+      isPageSwitching = false;
+    }, 250);
+  }, 100);
+}
+
 function renderPagination(totalPages) {
   if (!pagination) {
     return;
@@ -302,8 +433,10 @@ function renderPagination(totalPages) {
 
   pagination.querySelectorAll('[data-page]:not([disabled])').forEach((button) => {
     button.addEventListener('click', () => {
-      currentPage = Number(button.dataset.page);
-      renderDesktopItems(itemsForCurrentView);
+      const page = Number(button.dataset.page);
+      if (!Number.isNaN(page)) {
+        goToPage(page);
+      }
     });
   });
 }
@@ -680,6 +813,7 @@ function initSiteTitle() {
     .catch(() => {});
 }
 
+initWallpaper();
 initSiteTitle();
 fetchImportedItems();
 renderAnnouncementMarkdown(getAnnouncementMarkdown());

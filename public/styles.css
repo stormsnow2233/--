@@ -28,17 +28,43 @@
   box-sizing: border-box;
 }
 
-html, body {
+html {
   margin: 0;
   width: 100%;
   min-height: 100%;
   font-family: "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
-  background: linear-gradient(180deg, var(--bg-strong) 0%, var(--bg) 100%);
+  background-color: #151a24;
   color: var(--text);
 }
 
 body {
+  margin: 0;
+  width: 100%;
   min-height: 100vh;
+  background-color: transparent;
+  color: var(--text);
+}
+
+.wallpaper-layer {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -3;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #151a24;
+  pointer-events: none;
+  transition: opacity 0.8s ease-in-out, filter 0.8s ease-in-out;
+}
+
+.wallpaper-layer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(rgba(247, 248, 250, 0.42), rgba(247, 248, 250, 0.62));
+  pointer-events: none;
 }
 
 button,
@@ -1848,10 +1874,7 @@ input[data-field] {
 
 /* Final homepage presentation overrides. */
 body:has(.openlist-shell) {
-  background:
-    linear-gradient(rgba(247, 248, 250, 0.42), rgba(247, 248, 250, 0.62)),
-    url('https://bing.img.run/1920x1080.php') center / cover fixed no-repeat,
-    url('https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1920&q=80') center / cover fixed no-repeat;
+  background: transparent;
 }
 
 body:has(.openlist-shell) .list-size,
@@ -2628,7 +2651,41 @@ body:has(.openlist-shell) .list-panel {
 }
 
 body:has(.openlist-shell) .desktop-grid {
-  transition: opacity var(--mo-quick) ease;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+body:has(.openlist-shell) .desktop-grid.page-switching {
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
+}
+
+body:has(.openlist-shell) .desktop-grid.page-switched {
+  animation: pageDissolveIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes pageDissolveIn {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#changeWallpaperBtn.is-rotating i {
+  animation: iconSpin 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes iconSpin {
+  0% {
+    transform: rotate(0deg) scale(0.9);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
 }
 
 /* Empty states. The icon now lives in the markup (one per case: search miss,
