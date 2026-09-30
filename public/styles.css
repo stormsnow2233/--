@@ -1416,63 +1416,103 @@ body {
    page background is a random daily photo, a light one (or none at all) made the
    button disappear entirely. A dark fill keeps the white label legible over any
    backdrop, and matches the frosted surfaces used elsewhere on the page. */
-.thank-you-link {
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  background: rgba(24, 33, 50, 0.72);
-  color: #fff;
-  border-radius: 999px;
-  padding: 10px 22px;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 1px;
-  cursor: pointer;
-  backdrop-filter: blur(10px) saturate(140%);
-  -webkit-backdrop-filter: blur(10px) saturate(140%);
-  box-shadow: 0 10px 24px rgba(12, 20, 34, 0.28);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+/* ---------- thank-you bottom card (OpenList / yhcres.top style) ---------- */
+.thank-you-card {
+  margin-top: 18px;
+  margin-bottom: 36px;
+  padding: 28px 24px;
+  background: var(--mo-surface, rgba(255, 255, 255, 0.72));
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 18px;
+  box-shadow: 0 10px 30px -8px rgba(37, 47, 64, 0.18);
+  text-align: center;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
-.thank-you-modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(18, 27, 42, 0.45);
+.thank-you-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 36px -6px rgba(37, 47, 64, 0.22);
+}
+
+.thank-you-avatar {
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
-  z-index: 40;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  border: 2px solid rgba(22, 141, 242, 0.25);
+  color: #1688ee;
+  font-size: 24px;
+  box-shadow: 0 6px 18px rgba(22, 141, 242, 0.15);
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease;
 }
 
-.thank-you-modal.hidden {
-  display: none;
+.thank-you-card:hover .thank-you-avatar {
+  transform: scale(1.08) rotate(6deg);
+  box-shadow: 0 8px 22px rgba(22, 141, 242, 0.25);
 }
 
-.thank-you-modal-panel {
-  width: min(520px, 90vw);
-  max-height: 80vh;
-  overflow-y: auto;
-  background: rgba(255,255,255,0.92);
-  border: 1px solid rgba(255,255,255,0.65);
-  border-radius: 20px;
-  padding: 20px;
-  box-shadow: var(--shadow);
+.thank-you-card-body {
+  color: #4f5b6c;
+  font-size: 14px;
+  line-height: 1.8;
 }
 
-.thank-you-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
+.thank-you-card-body h1,
+.thank-you-card-body h2,
+.thank-you-card-body h3,
+.thank-you-card-body h4 {
+  margin: 8px 0 6px;
+  color: #1f2937;
+  font-weight: 700;
 }
 
-.thank-you-modal-header h3 {
-  margin: 0;
-  font-size: 20px;
+.thank-you-card-body h2 {
+  font-size: 17px;
 }
 
-.thank-you-list {
-  display: block;
+.thank-you-card-body h3 {
+  font-size: 15px;
+}
+
+.thank-you-card-body p {
+  margin: 6px 0;
+}
+
+.thank-you-card-body ul {
+  display: inline-block;
+  text-align: left;
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.thank-you-card-body li {
+  margin: 3px 0;
+}
+
+.thank-you-card-body a {
+  color: #1688ee;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.18s ease;
+}
+
+.thank-you-card-body a:hover {
+  text-decoration: underline;
+  color: #0d6efd;
+}
+
+.thank-you-card-body code {
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: #eef4ff;
+  color: #4365ad;
+  font-size: 12.5px;
 }
 
 .thank-you-item {
@@ -2437,14 +2477,9 @@ body:has(.openlist-shell) .openlist-shell {
   animation: homePanelIn 0.46s var(--mo-ease-standard) 0.22s both;
 }
 
-/* Thank-you entry: the footer owns centring via translateX(-50%), so animate
-   the OPACITY only and let the inner button carry the movement. */
-.openlist-shell.home-boot ~ .thank-you-footer {
-  animation: homeFadeIn 0.5s ease 0.46s both;
-}
-
-.openlist-shell.home-boot ~ .thank-you-footer .thank-you-link {
-  animation: homeRiseSoftIn 0.42s var(--mo-ease-standard) 0.46s both;
+/* Thank-you bottom card entry animation */
+.openlist-shell.home-boot .thank-you-card {
+  animation: homeRiseSoftIn 0.45s var(--mo-ease-standard) 0.32s both;
 }
 
 /* File-list entry. Only present during the one-shot boot window, so folder
@@ -2802,25 +2837,6 @@ body:has(.openlist-shell) .page-button:active:not(:disabled) {
   transition-duration: var(--mo-instant);
 }
 
-/* ---------- fixed footer ---------- */
-body:has(.openlist-shell) .thank-you-footer .thank-you-link {
-  transition:
-    transform var(--mo-base) var(--mo-ease-pop),
-    background-color var(--mo-base) ease,
-    box-shadow var(--mo-base) ease;
-}
-
-body:has(.openlist-shell) .thank-you-footer .thank-you-link:hover {
-  transform: translateY(-3px) scale(1.05);
-  /* Stays dark: brightening it used to wash the label out on a light backdrop. */
-  background: rgba(24, 33, 50, 0.85);
-  box-shadow: 0 22px 40px -10px rgba(12, 20, 34, 0.45);
-}
-
-body:has(.openlist-shell) .thank-you-footer .thank-you-link:active {
-  transform: translateY(-1px) scale(0.98);
-  transition-duration: var(--mo-instant);
-}
 
 /* ---------- focus visibility ---------- */
 body:has(.openlist-shell) :is(button, a, input):focus-visible {
@@ -2902,77 +2918,7 @@ body:has(.openlist-shell) :is(button, a, input):focus-visible {
   100% { opacity: 0.2; transform: scale(1); }
 }
 
-/* ---------- thank-you modal ---------- */
-body:has(.openlist-shell) .thank-you-modal:not(.hidden) {
-  animation: thankYouBackdropIn 0.24s ease-out both;
-}
 
-body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-modal-panel {
-  animation: thankYouPanelIn 0.36s var(--mo-ease-entrance) both;
-}
-
-body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-modal-header {
-  animation: thankYouHeaderIn 0.4s var(--mo-ease-standard) 0.08s both;
-}
-
-body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-item,
-body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-empty {
-  animation: thankYouItemIn 0.28s var(--mo-ease-standard) both;
-  animation-delay: calc(0.12s + (var(--item-index, 0) * 0.05s));
-}
-
-body:has(.openlist-shell) .thank-you-modal:not(.hidden) .thank-you-item:hover {
-  transform: translateX(4px);
-}
-
-/* Closing. The "open" rules above use fill-mode `both`, so an ended animation
-   would keep pinning opacity/transform and fight the exit animation — they have
-   to be explicitly neutralised for the closing state. */
-body:has(.openlist-shell) .thank-you-modal.is-closing,
-body:has(.openlist-shell) .thank-you-modal.is-closing .thank-you-modal-panel,
-body:has(.openlist-shell) .thank-you-modal.is-closing .thank-you-modal-header,
-body:has(.openlist-shell) .thank-you-modal.is-closing .thank-you-item,
-body:has(.openlist-shell) .thank-you-modal.is-closing .thank-you-empty {
-  animation: none;
-}
-
-body:has(.openlist-shell) .thank-you-modal.is-closing {
-  animation: thankYouBackdropOut 0.18s var(--mo-ease-exit) both;
-}
-
-body:has(.openlist-shell) .thank-you-modal.is-closing .thank-you-modal-panel {
-  animation: thankYouPanelOut 0.18s var(--mo-ease-exit) both;
-}
-
-@keyframes thankYouBackdropIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes thankYouBackdropOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
-@keyframes thankYouPanelIn {
-  from { opacity: 0; transform: translateY(26px) scale(0.95); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-@keyframes thankYouPanelOut {
-  from { opacity: 1; transform: translateY(0) scale(1); }
-  to { opacity: 0; transform: translateY(14px) scale(0.97); }
-}
-
-@keyframes thankYouHeaderIn {
-  from { opacity: 0; transform: translateY(-6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes thankYouItemIn {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
-}
 
 /* ---------- reduced motion: one switch that disables the whole layer ---------- */
 @media (prefers-reduced-motion: reduce) {

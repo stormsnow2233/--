@@ -4,11 +4,8 @@ const desktopGrid = document.getElementById('desktopGrid');
 const pagination = document.getElementById('pagination');
 const resourceSearch = document.getElementById('resourceSearch');
 const folderBreadcrumb = document.getElementById('folderBreadcrumb');
-const thankYouButton = document.getElementById('openThankYouList');
-const thankYouModal = document.getElementById('thankYouModal');
-const thankYouList = document.getElementById('thankYouList');
-const thankYouPagination = document.getElementById('thankYouPagination');
-const closeThankYouModalBtn = document.getElementById('closeThankYouModal');
+const thankYouCard = document.getElementById('thankYouCard');
+const thankYouCardBody = document.getElementById('thankYouCardBody');
 const viewButtons = document.querySelectorAll('.view-button');
 const listPanel = document.querySelector('.list-panel');
 const shell = document.querySelector('.openlist-shell');
@@ -559,60 +556,21 @@ function getThankYouMarkdown() {
   return raw;
 }
 
-function renderThankYouList() {
-  if (!thankYouList) {
+function renderThankYouCard() {
+  if (!thankYouCardBody) {
     return;
   }
   const markdown = getThankYouMarkdown();
-  thankYouList.innerHTML = parseSimpleMarkdown(markdown);
-}
-
-function openThankYouModal() {
-  if (!thankYouModal) {
+  if (!markdown || !markdown.trim() || markdown === '还没有设置感谢名单') {
+    if (thankYouCard) {
+      thankYouCard.style.display = 'none';
+    }
     return;
   }
-
-  if (closeTimer !== null) {
-    clearTimeout(closeTimer);
-    closeTimer = null;
+  if (thankYouCard) {
+    thankYouCard.style.display = '';
   }
-
-  renderThankYouList();
-  thankYouModal.classList.remove('is-opening');
-  thankYouModal.classList.remove('is-closing');
-  thankYouModal.classList.remove('hidden');
-  thankYouModal.setAttribute('aria-hidden', 'false');
-  void thankYouModal.offsetWidth;
-  requestAnimationFrame(() => {
-    thankYouModal.classList.add('is-opening');
-  });
-}
-
-function closeThankYouModal() {
-  if (!thankYouModal || thankYouModal.classList.contains('hidden')) {
-    return;
-  }
-
-  if (prefersReducedMotion()) {
-    hideThankYouModal();
-    return;
-  }
-
-  thankYouModal.classList.remove('is-opening');
-  thankYouModal.classList.add('is-closing');
-  thankYouModal.setAttribute('aria-hidden', 'true');
-  closeTimer = window.setTimeout(hideThankYouModal, 190);
-}
-
-function hideThankYouModal() {
-  if (closeTimer !== null) {
-    clearTimeout(closeTimer);
-    closeTimer = null;
-  }
-  thankYouModal.classList.add('hidden');
-  thankYouModal.classList.remove('is-opening');
-  thankYouModal.classList.remove('is-closing');
-  thankYouModal.setAttribute('aria-hidden', 'true');
+  thankYouCardBody.innerHTML = parseSimpleMarkdown(markdown);
 }
 
 function renderAnnouncementMarkdown(markdown) {
@@ -624,22 +582,6 @@ function renderAnnouncementMarkdown(markdown) {
 
 function getAnnouncementMarkdown() {
   return localStorage.getItem(ANNOUNCEMENT_KEY) || ANNOUNCEMENT_MARKDOWN;
-}
-
-if (thankYouButton) {
-  thankYouButton.addEventListener('click', openThankYouModal);
-}
-
-if (closeThankYouModalBtn) {
-  closeThankYouModalBtn.addEventListener('click', closeThankYouModal);
-}
-
-if (thankYouModal) {
-  thankYouModal.addEventListener('click', (event) => {
-    if (event.target === thankYouModal) {
-      closeThankYouModal();
-    }
-  });
 }
 
 function setAnnouncementVisible(visible) {
@@ -669,7 +611,6 @@ if (announcementModal) {
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
     setAnnouncementVisible(false);
-    closeThankYouModal();
   }
 });
 
@@ -714,6 +655,7 @@ if (refreshBtn) {
 
 fetchImportedItems();
 renderAnnouncementMarkdown(getAnnouncementMarkdown());
+renderThankYouCard();
 
 /* Reveal the announcement only once the main interface has settled.
    Showing it immediately meant it popped up on its own while the page behind it
