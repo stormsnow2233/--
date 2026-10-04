@@ -220,12 +220,13 @@ async function loadAnnouncementEditor() {
   if (!announcementEditor) {
     return;
   }
-  announcementEditor.value = localStorage.getItem(ANNOUNCEMENT_KEY) || DEFAULT_ANNOUNCEMENT;
+  const stored = localStorage.getItem(ANNOUNCEMENT_KEY);
+  announcementEditor.value = stored !== null ? stored : DEFAULT_ANNOUNCEMENT;
 
   try {
     const res = await fetch('/api/settings', { cache: 'no-store' });
     const data = await res.json();
-    if (data?.settings?.announcementMarkdown) {
+    if (data?.settings?.announcementMarkdown !== undefined && data.settings.announcementMarkdown !== null) {
       announcementEditor.value = data.settings.announcementMarkdown;
       localStorage.setItem(ANNOUNCEMENT_KEY, data.settings.announcementMarkdown);
     }

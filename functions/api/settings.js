@@ -8,6 +8,7 @@ function jsonResponse(payload, status = 200) {
     status,
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store',
     },
   });
 }

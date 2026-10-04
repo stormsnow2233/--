@@ -714,7 +714,10 @@ function renderAnnouncementMarkdown(markdown) {
 }
 
 function getAnnouncementMarkdown() {
-  return localStorage.getItem(ANNOUNCEMENT_KEY) || ANNOUNCEMENT_MARKDOWN;
+  const stored = localStorage.getItem(ANNOUNCEMENT_KEY);
+  // null means never fetched — use the built-in default.
+  // Empty string means the server explicitly cleared the announcement.
+  return stored !== null ? stored : ANNOUNCEMENT_MARKDOWN;
 }
 
 function setAnnouncementVisible(visible) {
@@ -815,13 +818,17 @@ function initSiteSettings() {
           localStorage.setItem(THANKS_KEY, data.settings.thankYouMarkdown);
           renderThankYouCard();
         }
-        if (data.settings.announcementMarkdown) {
+        if (data.settings.announcementMarkdown !== undefined && data.settings.announcementMarkdown !== null) {
           localStorage.setItem(ANNOUNCEMENT_KEY, data.settings.announcementMarkdown);
           renderAnnouncementMarkdown(data.settings.announcementMarkdown);
         }
       }
     })
-    .catch(() => {});
+    .catch(() => {
+      // API failed — render from localStorage cache (best effort)
+      renderThankYouCard();
+      renderAnnouncementMarkdown(getAnnouncementMarkdown());
+    });
 }
 
 const backToTopBtn = document.getElementById('backToTopBtn');
@@ -864,8 +871,15 @@ renderThankYouCard();
 function revealAnnouncementWhenReady() {
   const ANNOUNCEMENT_MAX_WAIT_MS = 5000;
 
+  const showIfHasContent = () => {
+    const content = getAnnouncementMarkdown();
+    if (content && content.trim()) {
+      setAnnouncementVisible(true);
+    }
+  };
+
   if (!shell || bootSettled) {
-    setAnnouncementVisible(true);
+    showIfHasContent();
     return;
   }
 
@@ -873,7 +887,7 @@ function revealAnnouncementWhenReady() {
   const timer = window.setInterval(() => {
     if (bootSettled || Date.now() - startedAt > ANNOUNCEMENT_MAX_WAIT_MS) {
       window.clearInterval(timer);
-      setAnnouncementVisible(true);
+      showIfHasContent();
     }
   }, 60);
 }
