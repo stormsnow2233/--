@@ -53,6 +53,14 @@
           <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
           <input id="resourceSearch" class="resource-search" type="text" placeholder="搜索所有文件夹中的资源" aria-label="搜索所有文件夹中的资源" />
         </div>
+        <div class="resource-sort-row">
+          <label for="resourceSort">排序</label>
+          <select id="resourceSort" class="resource-sort">
+            <option value="newest">最近上传</option>
+            <option value="name">名称</option>
+            <option value="size">文件大小</option>
+          </select>
+        </div>
 
         <section class="resource-stats" aria-label="资源统计" aria-live="polite">
           <div class="resource-stat">

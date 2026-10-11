@@ -3,6 +3,7 @@ const backFolderBtn = document.getElementById('backFolderBtn');
 const desktopGrid = document.getElementById('desktopGrid');
 const pagination = document.getElementById('pagination');
 const resourceSearch = document.getElementById('resourceSearch');
+const resourceSort = document.getElementById('resourceSort');
 const resourceLoadNotice = document.getElementById('resourceLoadNotice');
 const resourceFileCount = document.getElementById('resourceFileCount');
 const resourceTotalSize = document.getElementById('resourceTotalSize');
@@ -341,14 +342,44 @@ function getItemParentPath(item) {
 
 function getFilteredItems(query = '') {
   const keyword = String(query || '').trim().toLowerCase();
+  const items = keyword
+    ? allItems.filter((item) => String(item.name || '').toLowerCase().includes(keyword))
+    : getVisibleItems();
 
-  if (!keyword) {
-    return getVisibleItems();
-  }
+  const sortMode = resourceSort ? resourceSort.value : 'newest';
+  return items.slice().sort((a, b) => {
+    if (Boolean(a.is_dir) !== Boolean(b.is_dir)) {
+      return a.is_dir ? -1 : 1;
+    }
 
-  return allItems.filter((item) => {
-    const name = String(item.name || '').toLowerCase();
-    return name.includes(keyword);
+    const nameOrder = String(a.name || '').localeCompare(String(b.name || ''), 'zh-CN', {
+      numeric: true,
+      sensitivity: 'base',
+    });
+
+    if (sortMode === 'name') {
+      return nameOrder;
+    }
+
+    if (sortMode === 'size' && !a.is_dir) {
+      const aSize = parseSizeBytes(a.size);
+      const bSize = parseSizeBytes(b.size);
+      if (aSize !== bSize) {
+        if (aSize === null) return 1;
+        if (bSize === null) return -1;
+        return bSize - aSize;
+      }
+    } else if (sortMode === 'newest') {
+      const aTime = Date.parse(a.createdAt || '') || 0;
+      const bTime = Date.parse(b.createdAt || '') || 0;
+      if (aTime !== bTime) {
+        if (!aTime) return 1;
+        if (!bTime) return -1;
+        return bTime - aTime;
+      }
+    }
+
+    return nameOrder;
   });
 }
 
@@ -681,7 +712,7 @@ function renderLatestUploads() {
       const bTime = Date.parse(b.createdAt || '') || 0;
       return bTime - aTime;
     })
-    .slice(0, 5);
+    .slice(0, 1);
 
   if (!latestFiles.length) {
     latestUploadsList.innerHTML = '<p class="latest-uploads-empty">暂无上传记录</p>';
@@ -784,6 +815,13 @@ if (resourceSearch) {
   resourceSearch.addEventListener('input', (event) => {
     currentPage = 1;
     renderDesktopItems(getFilteredItems(event.target.value));
+  });
+}
+
+if (resourceSort) {
+  resourceSort.addEventListener('change', () => {
+    currentPage = 1;
+    renderDesktopItems(getFilteredItems(resourceSearch ? resourceSearch.value : ''));
   });
 }
 
