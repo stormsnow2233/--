@@ -52,11 +52,33 @@
           <input id="resourceSearch" class="resource-search" type="text" placeholder="搜索资源" aria-label="搜索资源" />
         </div>
 
+        <section class="resource-stats" aria-label="资源统计" aria-live="polite">
+          <div class="resource-stat">
+            <i class="fa-solid fa-file-lines" aria-hidden="true"></i>
+            <div>
+              <span class="resource-stat-label">已收录文件</span>
+              <strong id="resourceFileCount">—</strong>
+            </div>
+          </div>
+          <div class="resource-stat">
+            <i class="fa-solid fa-database" aria-hidden="true"></i>
+            <div>
+              <span class="resource-stat-label">文件总容量</span>
+              <strong id="resourceTotalSize">—</strong>
+              <span id="resourceSizeNote" class="resource-stat-note"></span>
+            </div>
+          </div>
+        </section>
+
         <section class="list-panel">
           <div class="list-header">
             <div class="col-name">名称</div>
             <div class="col-size">大小</div>
             <div class="col-date">修改时间</div>
+          </div>
+          <div id="resourceLoadNotice" class="resource-load-notice" role="alert">
+            <span><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> 刷新失败</span>
+            <button type="button" data-retry-items>重试</button>
           </div>
           <div id="desktopGrid" class="desktop-grid" aria-live="polite" aria-busy="true"></div>
           <div id="pagination" class="pagination" aria-label="资源分页"></div>

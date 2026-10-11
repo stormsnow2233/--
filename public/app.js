@@ -3,6 +3,10 @@ const backFolderBtn = document.getElementById('backFolderBtn');
 const desktopGrid = document.getElementById('desktopGrid');
 const pagination = document.getElementById('pagination');
 const resourceSearch = document.getElementById('resourceSearch');
+const resourceLoadNotice = document.getElementById('resourceLoadNotice');
+const resourceFileCount = document.getElementById('resourceFileCount');
+const resourceTotalSize = document.getElementById('resourceTotalSize');
+const resourceSizeNote = document.getElementById('resourceSizeNote');
 const folderBreadcrumb = document.getElementById('folderBreadcrumb');
 const thankYouCard = document.getElementById('thankYouCard');
 const thankYouCardBody = document.getElementById('thankYouCardBody');
@@ -127,6 +131,8 @@ const ANNOUNCEMENT_MARKDOWN = `欢迎来到 **网盘资源库**。
 [查看使用说明](https://example.com)`;
 
 let allItems = [];
+let hasLoadedItems = false;
+let isLoadingItems = false;
 let currentFolderId = 0;
 let currentPage = 1;
 const PAGE_SIZE = 13;
@@ -320,6 +326,52 @@ function getFilteredItems(query = '') {
   });
 }
 
+function parseSizeBytes(size) {
+  const match = String(size || '').trim().match(/^(\d+(?:\.\d+)?)\s*(B|KB|MB|GB|TB|K|M|G|T)$/i);
+  if (!match) {
+    return null;
+  }
+
+  const value = Number(match[1]);
+  const unit = match[2].toUpperCase();
+  const unitIndex = { B: 0, K: 1, KB: 1, M: 2, MB: 2, G: 3, GB: 3, T: 4, TB: 4 }[unit];
+  return Number.isFinite(value) ? value * (1024 ** unitIndex) : null;
+}
+
+function formatTotalBytes(bytes) {
+  if (!Number.isFinite(bytes) || bytes < 0) {
+    return '—';
+  }
+
+  const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+  let value = bytes;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  const rounded = value >= 100 || unitIndex === 0 ? Math.round(value) : Math.round(value * 10) / 10;
+  return `${rounded} ${units[unitIndex]}`;
+}
+
+function renderResourceStats() {
+  if (!resourceFileCount || !resourceTotalSize) {
+    return;
+  }
+
+  const files = allItems.filter((item) => !item.is_dir);
+  const knownSizes = files.map((item) => parseSizeBytes(item.size)).filter((size) => size !== null);
+  const totalBytes = knownSizes.reduce((total, size) => total + size, 0);
+
+  resourceFileCount.textContent = files.length.toLocaleString('zh-CN');
+  resourceTotalSize.textContent = knownSizes.length ? formatTotalBytes(totalBytes) : files.length ? '暂无数据' : '0 B';
+  if (resourceSizeNote) {
+    resourceSizeNote.textContent = knownSizes.length && knownSizes.length < files.length
+      ? `已统计 ${knownSizes.length}/${files.length} 个文件`
+      : '';
+  }
+}
+
 function getItemIconClass(item) {
   if (item && item.is_dir) {
     return 'icon-folder';
@@ -453,6 +505,19 @@ let itemsForCurrentView = [];
 function renderEmptyState() {
   const query = resourceSearch ? resourceSearch.value.trim() : '';
 
+  if (!hasLoadedItems) {
+    desktopGrid.innerHTML = `
+      <div class="empty-state is-load-error">
+        <i class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></i>
+        <p class="empty-title">资源暂时加载失败</p>
+        <p class="empty-hint">请检查网络连接后重试。</p>
+        <button type="button" class="empty-action" data-retry-items>重试</button>
+      </div>
+    `;
+    desktopGrid.querySelector('[data-retry-items]').addEventListener('click', fetchImportedItems);
+    return;
+  }
+
   if (query) {
     desktopGrid.innerHTML = `
       <div class="empty-state is-search-miss">
@@ -567,6 +632,17 @@ function renderDesktopItems(items) {
 }
 
 async function fetchImportedItems() {
+  if (isLoadingItems) {
+    return;
+  }
+  isLoadingItems = true;
+  if (refreshBtn) {
+    refreshBtn.disabled = true;
+  }
+  document.querySelectorAll('[data-retry-items]').forEach((button) => {
+    button.disabled = true;
+  });
+
   try {
     const response = await fetch('/api/imported-items', { cache: 'no-store' });
     const data = await response.json();
@@ -576,14 +652,32 @@ async function fetchImportedItems() {
     }
 
     allItems = data.items || [];
+    hasLoadedItems = true;
+    renderResourceStats();
     currentPage = 1;
+    if (resourceLoadNotice) {
+      resourceLoadNotice.classList.remove('is-visible');
+    }
     renderBreadcrumb();
     renderDesktopItems(getFilteredItems(resourceSearch ? resourceSearch.value : ''));
   } catch (error) {
-    allItems = [];
-    currentPage = 1;
-    renderBreadcrumb();
-    renderDesktopItems([]);
+    console.error('Failed to load imported items:', error);
+    if (hasLoadedItems) {
+      if (resourceLoadNotice) {
+        resourceLoadNotice.classList.add('is-visible');
+      }
+    } else {
+      renderBreadcrumb();
+      renderDesktopItems([]);
+    }
+  } finally {
+    isLoadingItems = false;
+    if (refreshBtn) {
+      refreshBtn.disabled = false;
+    }
+    document.querySelectorAll('[data-retry-items]').forEach((button) => {
+      button.disabled = false;
+    });
   }
 }
 

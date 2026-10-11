@@ -733,7 +733,67 @@ body {
 }
 
 .search-panel {
-  display: none;
+  margin-bottom: 12px;
+}
+
+.resource-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.resource-stat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  border-radius: 14px;
+  background: var(--mo-surface, rgba(255, 255, 255, 0.72));
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  box-shadow: 0 8px 22px -8px rgba(37, 47, 64, 0.16);
+}
+
+.resource-stat > i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: rgba(22, 141, 242, 0.1);
+  color: #1688ee;
+  font-size: 16px;
+}
+
+.resource-stat > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.resource-stat-label {
+  color: #657080;
+  font-size: 12px;
+}
+
+.resource-stat strong {
+  overflow: hidden;
+  color: #252a33;
+  font-size: 18px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resource-stat-note {
+  color: #8b95a3;
+  font-size: 11px;
 }
 
 /* Frosted content surface: the forest photo stays legible behind the UI while
@@ -749,6 +809,46 @@ body {
   -webkit-backdrop-filter: blur(16px) saturate(150%);
   box-shadow: 0 10px 30px -8px rgba(37, 47, 64, 0.22);
   overflow: hidden;
+}
+
+.resource-load-notice {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(232, 167, 71, 0.22);
+  background: rgba(255, 248, 232, 0.9);
+  color: #79551c;
+  font-size: 13px;
+}
+
+.resource-load-notice.is-visible {
+  display: flex;
+}
+
+.resource-load-notice span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.resource-load-notice button {
+  flex: 0 0 auto;
+  padding: 5px 12px;
+  border: 1px solid rgba(121, 85, 28, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: inherit;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.resource-load-notice button:disabled,
+.empty-action:disabled,
+.icon-action:disabled {
+  cursor: wait;
+  opacity: 0.6;
 }
 
 .list-header,
