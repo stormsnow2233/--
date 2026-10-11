@@ -2222,7 +2222,10 @@ body:has(.openlist-shell)::before {
 .announcement-panel {
   position: relative;
   width: min(360px, calc(100vw - 48px));
-  overflow: hidden;
+  max-height: calc(100vh - 116px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border: 1px solid rgba(255, 255, 255, 0.8);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.94);
@@ -2342,6 +2345,93 @@ body:has(.openlist-shell)::before {
   font-size: 12px;
 }
 
+.latest-uploads {
+  padding: 0 18px 16px;
+}
+
+.latest-uploads h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  color: #202735;
+  font-size: 14px;
+}
+
+.latest-uploads-badge {
+  padding: 2px 5px;
+  border-radius: 5px;
+  background: #fff0e8;
+  color: #ec6a32;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.latest-uploads-list {
+  display: grid;
+  gap: 5px;
+}
+
+.latest-upload-item {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 9px;
+  border: 1px solid #e8edf5;
+  border-radius: 9px;
+  background: rgba(247, 250, 255, 0.8);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.latest-upload-item:hover,
+.latest-upload-item:focus-visible {
+  border-color: #a8d2fb;
+  background: #f0f7ff;
+}
+
+.latest-upload-main {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.latest-upload-name,
+.latest-upload-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.latest-upload-name {
+  color: #2d3748;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.latest-upload-path {
+  color: #8490a1;
+  font-size: 10px;
+}
+
+.latest-upload-date {
+  flex: 0 0 auto;
+  color: #8792a2;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.latest-uploads-empty {
+  margin: 0;
+  color: #8490a1;
+  font-size: 12px;
+}
+
 @keyframes atmosphereDrift {
   from { transform: translate3d(-2.5%, -1.5%, 0) scale(0.99); }
   to { transform: translate3d(2.5%, 1.75%, 0) scale(1.07); }
@@ -2364,6 +2454,10 @@ body:has(.openlist-shell)::before {
     align-items: flex-start;
     justify-content: center;
     padding: 84px 14px 20px;
+  }
+
+  .announcement-panel {
+    max-height: calc(100vh - 104px);
   }
 }
 

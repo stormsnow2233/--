@@ -17,6 +17,7 @@ const shell = document.querySelector('.openlist-shell');
 const announcementModal = document.getElementById('announcementModal');
 const closeAnnouncementButton = document.getElementById('closeAnnouncement');
 const announcementContent = document.getElementById('announcementContent');
+const latestUploadsList = document.getElementById('latestUploadsList');
 
 const changeWallpaperBtn = document.getElementById('changeWallpaperBtn');
 const wallpaperLayer = document.getElementById('wallpaperLayer');
@@ -303,6 +304,10 @@ function renderBreadcrumb() {
   ];
 
   folderBreadcrumb.innerHTML = segments.join('<span class="breadcrumb-separator" aria-hidden="true">/</span>');
+
+  if (thankYouCard) {
+    thankYouCard.hidden = String(currentFolderId || 0) !== '0';
+  }
 
   const currentFolder = getFolderById(currentFolderId);
   if (folderDescription) {
@@ -659,6 +664,70 @@ function renderDesktopItems(items) {
   });
 }
 
+function renderLatestUploads() {
+  if (!latestUploadsList) {
+    return;
+  }
+
+  if (!hasLoadedItems) {
+    latestUploadsList.innerHTML = '<p class="latest-uploads-empty">暂时无法获取最新上传</p>';
+    return;
+  }
+
+  const latestFiles = allItems
+    .filter((item) => !item.is_dir)
+    .sort((a, b) => {
+      const aTime = Date.parse(a.createdAt || '') || 0;
+      const bTime = Date.parse(b.createdAt || '') || 0;
+      return bTime - aTime;
+    })
+    .slice(0, 5);
+
+  if (!latestFiles.length) {
+    latestUploadsList.innerHTML = '<p class="latest-uploads-empty">暂无上传记录</p>';
+    return;
+  }
+
+  latestUploadsList.innerHTML = latestFiles.map((item) => {
+    const itemPath = getItemParentPath(item).join(' / ') || '首页';
+    return `
+      <button type="button" class="latest-upload-item" data-latest-item-id="${escapeHtml(item.id)}">
+        <span class="latest-upload-main">
+          <span class="latest-upload-name">${escapeHtml(item.name || '未命名文件')}</span>
+          <span class="latest-upload-path">${escapeHtml(itemPath)}</span>
+        </span>
+        <time class="latest-upload-date">${escapeHtml(formatItemDate(item.createdAt))}</time>
+      </button>
+    `;
+  }).join('');
+}
+
+if (latestUploadsList) {
+  latestUploadsList.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-latest-item-id]');
+    if (!button) {
+      return;
+    }
+
+    const item = allItems.find((entry) => String(entry.id) === String(button.dataset.latestItemId));
+    if (!item || item.is_dir) {
+      return;
+    }
+
+    currentFolderId = item.parent_id || 0;
+    currentPage = 1;
+    if (resourceSearch) {
+      resourceSearch.value = '';
+    }
+    renderBreadcrumb();
+    renderDesktopItems(getVisibleItems());
+    setAnnouncementVisible(false);
+    if (listPanel) {
+      listPanel.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
+    }
+  });
+}
+
 async function fetchImportedItems() {
   if (isLoadingItems) {
     return;
@@ -682,6 +751,7 @@ async function fetchImportedItems() {
     allItems = data.items || [];
     hasLoadedItems = true;
     renderResourceStats();
+    renderLatestUploads();
     currentPage = 1;
     if (resourceLoadNotice) {
       resourceLoadNotice.classList.remove('is-visible');
@@ -690,6 +760,7 @@ async function fetchImportedItems() {
     renderDesktopItems(getFilteredItems(resourceSearch ? resourceSearch.value : ''));
   } catch (error) {
     console.error('Failed to load imported items:', error);
+    renderLatestUploads();
     if (hasLoadedItems) {
       if (resourceLoadNotice) {
         resourceLoadNotice.classList.add('is-visible');
