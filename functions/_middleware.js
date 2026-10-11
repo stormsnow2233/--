@@ -10,7 +10,7 @@
  * reliable than a file mtime here, since Workers have no filesystem to stat.
  */
 
-const ASSETS = /\/(styles\.css|app\.js|admin\.js|parser\.js)"/g;
+const ASSETS = /\/(styles\.css|app\.js|admin\.js|parser\.js)(?:\?[^"]*)?"/g;
 
 export async function onRequest(context) {
   const { request, env, next } = context;
@@ -45,10 +45,17 @@ export async function onRequest(context) {
   const version = env?.CF_PAGES_COMMIT_SHA || etag || env?.CF_PAGES_BRANCH || 'dev';
 
   const html = await response.text();
-  const stamped = html.replace(ASSETS, (match, file) => `/${file}?v=${version}"`);
+  const stamped = html.replace(ASSETS, (match, file) => `/${file}?v=${encodeURIComponent(version)}"`);
+  const headers = new Headers(response.headers);
+  headers.delete('content-length');
+  headers.delete('content-encoding');
+  headers.delete('etag');
+  headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+  headers.set('Pragma', 'no-cache');
+  headers.set('Expires', '0');
 
   return new Response(stamped, {
     status: response.status,
-    headers: response.headers,
+    headers,
   });
 }
