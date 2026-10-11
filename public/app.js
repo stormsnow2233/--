@@ -388,8 +388,9 @@ function renderResourceStats() {
   resourceFileCount.textContent = files.length.toLocaleString('zh-CN');
   resourceTotalSize.textContent = knownSizes.length ? formatTotalBytes(totalBytes) : files.length ? '暂无数据' : '0 B';
   if (resourceSizeNote) {
-    resourceSizeNote.textContent = knownSizes.length && knownSizes.length < files.length
-      ? `已统计 ${knownSizes.length}/${files.length} 个文件`
+    const unknownSizeCount = files.length - knownSizes.length;
+    resourceSizeNote.textContent = unknownSizeCount
+      ? `${unknownSizeCount} 个文件未提供大小`
       : '';
   }
 }
