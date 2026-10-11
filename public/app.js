@@ -316,15 +316,32 @@ function getVisibleItems() {
   return allItems.filter((item) => String(item.parent_id || 0) === String(currentFolderId));
 }
 
-function getFilteredItems(query = '') {
-  const keyword = String(query || '').trim().toLowerCase();
-  const visible = getVisibleItems();
+function getItemParentPath(item) {
+  const path = [];
+  const visited = new Set();
+  let parentId = item.parent_id;
 
-  if (!keyword) {
-    return visible;
+  while (parentId && !visited.has(String(parentId))) {
+    visited.add(String(parentId));
+    const parent = getFolderById(parentId);
+    if (!parent) {
+      break;
+    }
+    path.unshift(parent.name);
+    parentId = parent.parent_id;
   }
 
-  return visible.filter((item) => {
+  return path;
+}
+
+function getFilteredItems(query = '') {
+  const keyword = String(query || '').trim().toLowerCase();
+
+  if (!keyword) {
+    return getVisibleItems();
+  }
+
+  return allItems.filter((item) => {
     const name = String(item.name || '').toLowerCase();
     const url = String(item.url || '').toLowerCase();
     const pwd = String(item.pwd || '').toLowerCase();
@@ -573,6 +590,8 @@ function renderEmptyState() {
 function renderDesktopItems(items) {
   itemsForCurrentView = items || [];
   const booting = isBooting();
+  const isSearching = Boolean(resourceSearch && resourceSearch.value.trim());
+  desktopGrid.classList.toggle('is-search-results', isSearching);
 
   if (!items || items.length === 0) {
     renderEmptyState();
@@ -592,6 +611,7 @@ function renderDesktopItems(items) {
     .map((item, index) => {
       const sizeText = item.size ? String(item.size) : item.is_dir ? '目录' : '未知大小';
       const animationIndex = Math.min(index, MOTION_STAGGER_CAP);
+      const itemPath = isSearching ? getItemParentPath(item).join(' / ') || '首页' : '';
 
       return `
         <div class="desktop-item ${item.is_dir ? 'is-folder' : 'is-file'}" data-item-id="${escapeHtml(item.id)}" style="--item-index: ${animationIndex};" title="${escapeHtml(item.name || '未命名文件')}">
@@ -599,6 +619,7 @@ function renderDesktopItems(items) {
             <div class="file-type-icon ${getItemIconClass(item)}" aria-hidden="true">${getItemIconHtml(item)}</div>
             <div class="desktop-name-wrap">
               <div class="desktop-name">${escapeHtml(item.name || '未命名文件')}</div>
+              ${isSearching ? `<div class="desktop-path">${escapeHtml(itemPath)}</div>` : ''}
             </div>
           </div>
           <div class="list-size">${escapeHtml(sizeText)}</div>
@@ -627,8 +648,11 @@ function renderDesktopItems(items) {
       if (item.is_dir) {
         currentFolderId = item.id;
         currentPage = 1;
+        if (resourceSearch) {
+          resourceSearch.value = '';
+        }
         renderBreadcrumb();
-        renderDesktopItems(getFilteredItems(resourceSearch ? resourceSearch.value : ''));
+        renderDesktopItems(getFilteredItems(''));
         return;
       }
 
@@ -705,8 +729,11 @@ if (folderBreadcrumb) {
 
     currentFolderId = button.dataset.breadcrumbFolder || 0;
     currentPage = 1;
+    if (resourceSearch) {
+      resourceSearch.value = '';
+    }
     renderBreadcrumb();
-    renderDesktopItems(getFilteredItems(resourceSearch ? resourceSearch.value : ''));
+    renderDesktopItems(getFilteredItems(''));
   });
 }
 
@@ -716,15 +743,21 @@ if (backFolderBtn) {
     if (!currentFolder) {
       currentFolderId = 0;
       currentPage = 1;
+      if (resourceSearch) {
+        resourceSearch.value = '';
+      }
       renderBreadcrumb();
-      renderDesktopItems(getFilteredItems(resourceSearch ? resourceSearch.value : ''));
+      renderDesktopItems(getFilteredItems(''));
       return;
     }
 
     currentFolderId = currentFolder.parent_id || 0;
     currentPage = 1;
+    if (resourceSearch) {
+      resourceSearch.value = '';
+    }
     renderBreadcrumb();
-    renderDesktopItems(getFilteredItems(resourceSearch ? resourceSearch.value : ''));
+    renderDesktopItems(getFilteredItems(''));
   });
 }
 

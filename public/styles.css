@@ -931,6 +931,20 @@ body {
   font-weight: 400;
 }
 
+.desktop-path {
+  display: none;
+  margin-top: 3px;
+  overflow: hidden;
+  color: #7b8797;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.desktop-grid.is-search-results .desktop-path {
+  display: block;
+}
+
 .list-size,
 .list-date {
   font-size: 12px;
