@@ -343,11 +343,7 @@ function getFilteredItems(query = '') {
 
   return allItems.filter((item) => {
     const name = String(item.name || '').toLowerCase();
-    const url = String(item.url || '').toLowerCase();
-    const pwd = String(item.pwd || '').toLowerCase();
-    const size = String(item.size || '').toLowerCase();
-
-    return name.includes(keyword) || url.includes(keyword) || pwd.includes(keyword) || size.includes(keyword);
+    return name.includes(keyword);
   });
 }
 
