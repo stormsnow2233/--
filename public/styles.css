@@ -326,32 +326,6 @@ button {
   color: #8a96ad;
 }
 
-.resource-sort-row {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  margin: 8px 22px 12px;
-  color: var(--text-soft);
-  font-size: 12px;
-}
-
-.resource-sort {
-  min-height: 34px;
-  padding: 0 30px 0 10px;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.82);
-  color: var(--text);
-  font: inherit;
-  cursor: pointer;
-}
-
-.resource-sort:focus-visible {
-  outline: 2px solid rgba(42, 109, 246, 0.45);
-  outline-offset: 2px;
-}
-
 .list-panel {
   margin: 8px 22px 22px;
   border: 1px solid var(--border);
@@ -1774,10 +1748,6 @@ body {
 }
 
 @media (max-width: 700px) {
-  .resource-sort-row {
-    margin: 8px 14px 12px;
-  }
-
   .thank-you-toggle {
     gap: 10px;
     min-height: 62px;
