@@ -73,6 +73,16 @@
           <section class="panel">
             <h2>当前目录内容</h2>
             <div id="currentFolderLabel" class="current-folder-label">当前目录：根目录</div>
+            <section id="folderDescriptionEditor" class="folder-description-editor" aria-labelledby="folderDescriptionHeading" hidden>
+              <div>
+                <h3 id="folderDescriptionHeading">文件夹简介</h3>
+                <p class="mini-hint">支持 Markdown，保存后会显示在访客端该文件夹的资源列表上方。</p>
+              </div>
+              <textarea id="folderDescriptionInput" maxlength="2000" placeholder="填写这个文件夹的说明、版本信息或注意事项"></textarea>
+              <div class="batch-actions">
+                <button id="saveFolderDescriptionBtn" class="primary" type="button">保存简介</button>
+              </div>
+            </section>
 
             <div id="batchBar" class="batch-bar hidden">
               <span id="batchCount" class="batch-count">已选 0 项</span>

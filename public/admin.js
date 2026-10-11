@@ -9,6 +9,9 @@ const folderTree = document.getElementById('folderTree');
 const folderItemsBody = document.getElementById('folderItemsBody');
 const currentFolderLabel = document.getElementById('currentFolderLabel');
 const folderBreadcrumb = document.getElementById('folderBreadcrumb');
+const folderDescriptionEditor = document.getElementById('folderDescriptionEditor');
+const folderDescriptionInput = document.getElementById('folderDescriptionInput');
+const saveFolderDescriptionBtn = document.getElementById('saveFolderDescriptionBtn');
 const createFolderBtn = document.getElementById('createFolderBtn');
 const createFolderModal = document.getElementById('createFolderModal');
 const createFolderInput = document.getElementById('createFolderInput');
@@ -307,11 +310,47 @@ function getCurrentFolderPath() {
 function renderFolderBreadcrumb() {
   const path = getCurrentFolderPath();
   const label = path.length ? path.map((item) => item.name).join(' / ') : '根目录';
+  const currentFolder = getFolderById(currentFolderId);
   if (folderBreadcrumb) {
     folderBreadcrumb.textContent = label;
   }
   if (currentFolderLabel) {
     currentFolderLabel.textContent = `当前目录：${label}`;
+  }
+  if (folderDescriptionEditor && folderDescriptionInput) {
+    folderDescriptionEditor.hidden = !currentFolder;
+    folderDescriptionInput.value = currentFolder ? currentFolder.description || '' : '';
+  }
+}
+
+async function saveFolderDescription() {
+  const folder = getFolderById(currentFolderId);
+  if (!folder || !folderDescriptionInput) {
+    showMessage('请先进入要编辑简介的文件夹', 'error');
+    return;
+  }
+
+  const authKey = getAdminSecret();
+  if (!authKey) {
+    showMessage('管理密钥不能为空。', 'error');
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/items/${encodeURIComponent(folder.id)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: folderDescriptionInput.value, authKey }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || '保存文件夹简介失败');
+    }
+
+    folder.description = folderDescriptionInput.value;
+    showMessage(data.message || '文件夹简介已保存', 'success');
+  } catch (error) {
+    showMessage(error.message || '保存文件夹简介失败', 'error');
   }
 }
 
@@ -1241,6 +1280,10 @@ if (saveSiteTitleBtn) {
 
 if (saveAnnouncementBtn) {
   saveAnnouncementBtn.addEventListener('click', saveAnnouncementSettings);
+}
+
+if (saveFolderDescriptionBtn) {
+  saveFolderDescriptionBtn.addEventListener('click', saveFolderDescription);
 }
 
 // Restore the admin key from sessionStorage for convenience within the same

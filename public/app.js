@@ -8,6 +8,7 @@ const resourceFileCount = document.getElementById('resourceFileCount');
 const resourceTotalSize = document.getElementById('resourceTotalSize');
 const resourceSizeNote = document.getElementById('resourceSizeNote');
 const folderBreadcrumb = document.getElementById('folderBreadcrumb');
+const folderDescription = document.getElementById('folderDescription');
 const thankYouCard = document.getElementById('thankYouCard');
 const thankYouCardBody = document.getElementById('thankYouCardBody');
 const viewButtons = document.querySelectorAll('.view-button');
@@ -302,6 +303,13 @@ function renderBreadcrumb() {
   ];
 
   folderBreadcrumb.innerHTML = segments.join('<span class="breadcrumb-separator" aria-hidden="true">/</span>');
+
+  const currentFolder = getFolderById(currentFolderId);
+  if (folderDescription) {
+    const description = String(currentFolder?.description || '').trim();
+    folderDescription.innerHTML = description ? parseSimpleMarkdown(description) : '';
+    folderDescription.classList.toggle('is-visible', Boolean(description));
+  }
 }
 
 function getVisibleItems() {

@@ -79,6 +79,7 @@ function normalizeItem(item) {
     url: String(record.url || '').trim(),
     pwd: String(record.pwd || '').trim(),
     size: String(record.size || '').trim(),
+    description: String(record.description || ''),
     storage_name: record.storage_name || '',
     createdAt: record.createdAt || new Date().toISOString(),
   };
@@ -457,14 +458,23 @@ app.delete('/api/items/:id', async (req, res) => {
    been calling PATCH all along, so renaming only ever worked on Cloudflare and
    silently 404'd locally. Nothing here is folder-specific. */
 app.patch('/api/items/:id', async (req, res) => {
-  const { authKey, name } = req.body || {};
+  const { authKey, name, description } = req.body || {};
   if (!requireAdminSecret(authKey)) {
     return res.status(401).json({ success: false, message: '管理密钥错误' });
   }
 
+  const hasName = Object.prototype.hasOwnProperty.call(req.body || {}, 'name');
+  const hasDescription = Object.prototype.hasOwnProperty.call(req.body || {}, 'description');
   const nextName = String(name || '').trim();
-  if (!nextName) {
+  const nextDescription = String(description || '');
+  if (!hasName && !hasDescription) {
+    return res.status(400).json({ success: false, message: '缺少要更新的内容' });
+  }
+  if (hasName && !nextName) {
     return res.status(400).json({ success: false, message: '名称不能为空' });
+  }
+  if (hasDescription && nextDescription.length > 2000) {
+    return res.status(400).json({ success: false, message: '文件夹简介不能超过 2000 个字符' });
   }
 
   const { id } = req.params;
@@ -480,15 +490,27 @@ app.patch('/api/items/:id', async (req, res) => {
         throw err;
       }
 
-      target.name = nextName;
+      if (hasDescription && !target.is_dir) {
+        const err = new Error('只有文件夹可以设置简介');
+        err.statusCode = 400;
+        throw err;
+      }
+
+      if (hasName) {
+        target.name = nextName;
+      }
+      if (hasDescription) {
+        target.description = nextDescription;
+      }
       writeImportedItems(items);
       return target;
     });
 
     res.json({
       success: true,
-      message: `${updated.is_dir ? '文件夹' : '文件'}重命名成功`,
-      name: nextName,
+      message: hasName ? `${updated.is_dir ? '文件夹' : '文件'}重命名成功` : '文件夹简介已保存',
+      ...(hasName ? { name: nextName } : {}),
+      ...(hasDescription ? { description: nextDescription } : {}),
     });
   } catch (error) {
     const status = error.statusCode || 500;

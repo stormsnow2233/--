@@ -72,17 +72,28 @@ export async function onRequestDelete({ request, env }) {
 }
 
 export async function onRequestPatch({ request, env }) {
+  let updatingDescription = false;
   try {
     const body = await request.json().catch(() => ({}));
-    const { authKey, name } = body || {};
+    const { authKey, name, description } = body || {};
+    updatingDescription = Object.prototype.hasOwnProperty.call(body, 'description');
 
     if (!authKey || authKey !== (env?.ADMIN_SECRET || ADMIN_SECRET)) {
       return jsonResponse({ success: false, message: '管理密钥错误' }, 401);
     }
 
+    const hasName = Object.prototype.hasOwnProperty.call(body, 'name');
+    const hasDescription = Object.prototype.hasOwnProperty.call(body, 'description');
     const nextName = String(name || '').trim();
-    if (!nextName) {
+    const nextDescription = String(description || '');
+    if (!hasName && !hasDescription) {
+      return jsonResponse({ success: false, message: '缺少要更新的内容' }, 400);
+    }
+    if (hasName && !nextName) {
       return jsonResponse({ success: false, message: '名称不能为空' }, 400);
+    }
+    if (hasDescription && nextDescription.length > 2000) {
+      return jsonResponse({ success: false, message: '文件夹简介不能超过 2000 个字符' }, 400);
     }
 
     const itemId = getItemIdFromUrl(request.url);
@@ -98,18 +109,31 @@ export async function onRequestPatch({ request, env }) {
       return jsonResponse({ success: false, message: '数据不存在' }, 404);
     }
 
-    // Both files and folders can be renamed; nothing here is folder-specific.
-    await env.DB.prepare('UPDATE imported_items SET name = ? WHERE id = ?').bind(nextName, itemId).run();
+    if (hasDescription && !target.is_dir) {
+      return jsonResponse({ success: false, message: '只有文件夹可以设置简介' }, 400);
+    }
+
+    if (hasName && hasDescription) {
+      await env.DB.prepare('UPDATE imported_items SET name = ?, description = ? WHERE id = ?')
+        .bind(nextName, nextDescription, itemId).run();
+    } else if (hasName) {
+      await env.DB.prepare('UPDATE imported_items SET name = ? WHERE id = ?').bind(nextName, itemId).run();
+    } else {
+      await env.DB.prepare('UPDATE imported_items SET description = ? WHERE id = ?')
+        .bind(nextDescription, itemId).run();
+    }
+
     return jsonResponse({
       success: true,
-      message: `${target.is_dir ? '文件夹' : '文件'}重命名成功`,
-      name: nextName,
+      message: hasName ? `${target.is_dir ? '文件夹' : '文件'}重命名成功` : '文件夹简介已保存',
+      ...(hasName ? { name: nextName } : {}),
+      ...(hasDescription ? { description: nextDescription } : {}),
     });
   } catch (error) {
     return jsonResponse(
       {
         success: false,
-        message: '重命名失败',
+        message: updatingDescription ? '文件夹简介保存失败' : '重命名失败',
         error: error instanceof Error ? error.message : String(error),
       },
       500

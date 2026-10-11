@@ -47,6 +47,8 @@
           </div>
         </div>
 
+        <section id="folderDescription" class="folder-description announcement-body" aria-label="文件夹简介"></section>
+
         <div class="search-panel">
           <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
           <input id="resourceSearch" class="resource-search" type="text" placeholder="搜索资源" aria-label="搜索资源" />
@@ -83,12 +85,15 @@
           <div id="desktopGrid" class="desktop-grid" aria-live="polite" aria-busy="true"></div>
           <div id="pagination" class="pagination" aria-label="资源分页"></div>
         </section>
-        <section id="thankYouCard" class="thank-you-card" aria-label="感谢名单">
-          <div class="thank-you-avatar">
-            <i class="fa-solid fa-heart"></i>
-          </div>
+        <details id="thankYouCard" class="thank-you-card">
+          <summary class="thank-you-toggle">
+            <span class="thank-you-avatar" aria-hidden="true"><i class="fa-solid fa-heart"></i></span>
+            <span class="thank-you-toggle-title">作者与鸣谢</span>
+            <span class="thank-you-toggle-hint">感谢 ROM 作者、维护者与收集协助者</span>
+            <i class="fa-solid fa-chevron-down thank-you-toggle-chevron" aria-hidden="true"></i>
+          </summary>
           <div id="thankYouCardBody" class="thank-you-card-body announcement-body"></div>
-        </section>
+        </details>
       </div>
     </main>
 

@@ -18,10 +18,23 @@ export async function ensureImportedTable(env) {
         url TEXT,
         pwd TEXT,
         size TEXT,
+        description TEXT DEFAULT '',
         createdAt TEXT NOT NULL
       )
     `)
     .run();
+
+  const { results = [] } = await db.prepare('PRAGMA table_info(imported_items)').all();
+  if (!results.some((column) => column.name === 'description')) {
+    try {
+      await db.prepare("ALTER TABLE imported_items ADD COLUMN description TEXT DEFAULT ''").run();
+    } catch (error) {
+      const { results: migratedColumns = [] } = await db.prepare('PRAGMA table_info(imported_items)').all();
+      if (!migratedColumns.some((column) => column.name === 'description')) {
+        throw error;
+      }
+    }
+  }
 }
 
 export function normalizeImportedItem(item, index = 0) {
@@ -33,6 +46,7 @@ export function normalizeImportedItem(item, index = 0) {
     url: String(item?.url || '').trim(),
     pwd: String(item?.pwd || '').trim(),
     size: String(item?.size || '').trim(),
+    description: String(item?.description || ''),
     createdAt: item?.createdAt || new Date().toISOString(),
   };
 }
@@ -52,6 +66,7 @@ export async function readImportedItems(env) {
     url: item.url,
     pwd: item.pwd,
     size: item.size,
+    description: item.description || '',
     createdAt: item.createdAt,
   }));
 }
@@ -69,8 +84,8 @@ export async function batchImport(env, items = []) {
 
   const statements = normalized.map((item) =>
     env.DB.prepare(
-      `INSERT INTO imported_items (id, parent_id, name, is_dir, url, pwd, size, createdAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO imported_items (id, parent_id, name, is_dir, url, pwd, size, description, createdAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind(
       item.id,
       item.parent_id,
@@ -79,6 +94,7 @@ export async function batchImport(env, items = []) {
       item.url,
       item.pwd,
       item.size,
+      item.description,
       item.createdAt
     )
   );
